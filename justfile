@@ -6,7 +6,7 @@ install:
 
 # Run the FastAPI server
 run:
-    uv run python -m uvicorn backend.fast_api:get_fast_api_app --host 127.0.0.1 --port 8000 --reload
+    uv run python run_server.py --agents-dir backend/agents
 
 # Run the FastAPI server with web interface
 run-web:

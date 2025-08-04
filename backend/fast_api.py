@@ -96,7 +96,7 @@ def get_fast_api_app(
   # Build the Memory service
   if memory_service_uri:
     if memory_service_uri.startswith("rag://"):
-      from ..memory.vertex_ai_rag_memory_service import VertexAiRagMemoryService
+      from google.adk.memory.vertex_ai_rag_memory_service import VertexAiRagMemoryService
 
       rag_corpus = memory_service_uri.split("://")[1]
       if not rag_corpus:
@@ -135,7 +135,7 @@ def get_fast_api_app(
           agent_engine_id=agent_engine_id,
       )
     else:
-      from ..sessions.database_session_service import DatabaseSessionService
+      from google.adk.sessions.database_session_service import DatabaseSessionService
 
       # Database session additional settings
       if session_db_kwargs is None:
@@ -299,7 +299,7 @@ def get_fast_api_app(
       from a2a.types import AgentCard
       from a2a.utils.constants import AGENT_CARD_WELL_KNOWN_PATH
 
-      from ..a2a.executor.a2a_agent_executor import A2aAgentExecutor
+      from google.adk.a2a.executor.a2a_agent_executor import A2aAgentExecutor
 
     except ImportError as e:
       import sys

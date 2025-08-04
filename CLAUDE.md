@@ -14,11 +14,13 @@ mindora_adk_agents/
 ├── backend/
 │   ├── api/
 │   │   └── adk_web_server.py   # ADK web server implementation
-│   └── fast_api.py            # FastAPI application setup
+│   ├── fast_api.py            # FastAPI application setup
+│   ├── agents/                # Agent implementations
+│   └── run.py                 # Server startup script
 ├── docs/
 │   └── design.md              # Design documentation
 ├── .venv/                     # Python virtual environment
-├── main.py                    # Entry point script
+├── run_server.py              # Main server entry point
 ├── pyproject.toml             # Python project configuration
 ├── .python-version            # Python version specification
 ├── justfile                   # Command shortcuts (currently empty)
@@ -56,8 +58,42 @@ Use `just` command to run common tasks:
 
 1. Ensure `uv` is installed: `curl -LsSf https://astral.sh/uv/install.sh | sh`
 2. Install dependencies: `just install` or `uv sync`
-3. Run the server: `just run`
+3. Run the server: `python run_server.py` or `just run`
 4. Test imports: `just test`
+
+## API Testing
+
+The backend server provides comprehensive API endpoints for agent interaction:
+
+### Main Endpoints
+- `GET /list-apps` - List available agent applications
+- `POST /run` - Run agent with message (synchronous)
+- `POST /run_sse` - Run agent with SSE streaming
+- `GET /docs` - Interactive API documentation
+
+### Session Management
+- `POST /apps/{app_name}/users/{user_id}/sessions` - Create session
+- `GET /apps/{app_name}/users/{user_id}/sessions` - List sessions
+- `GET /apps/{app_name}/users/{user_id}/sessions/{session_id}` - Get session details
+
+### Artifact Service
+- `GET /apps/{app_name}/users/{user_id}/sessions/{session_id}/artifacts` - List artifacts
+- `GET /apps/{app_name}/users/{user_id}/sessions/{session_id}/artifacts/{artifact_name}` - Get artifact
+
+### Debug & Monitoring
+- `GET /debug/trace/session/{session_id}` - Get session trace data
+- `GET /debug/trace/{event_id}` - Get specific event trace
+
+### Testing Example
+```bash
+# Start server
+python run_server.py
+
+# Test endpoints
+curl http://localhost:8000/list-apps
+curl -X POST http://localhost:8000/apps/adk_demo/users/test_user/sessions
+curl -X POST http://localhost:8000/run -H "Content-Type: application/json" -d '{"appName":"adk_demo","userId":"test_user","sessionId":"SESSION_ID","newMessage":{"role":"user","parts":[{"text":"Hello"}]}}'
+```
 
 ## Key Implementation Details
 
@@ -91,3 +127,12 @@ Agent implementations should reference examples from:
 - The backend implements the full ADK web server API with session management, artifact handling, and evaluation capabilities
 - Development workflow commands should be added to the justfile as the project progresses
 - The project uses a Chinese-language README but code and documentation should be in English
+
+## Server Status
+
+The backend server is fully functional and tested:
+- ✅ All core endpoints working correctly
+- ✅ Agent execution and session management operational
+- ✅ SSE streaming and debug tracing functional
+- ✅ Available agents: `adk_demo`, `assistant`
+- ✅ Default server runs on `http://localhost:8000`
