@@ -1,0 +1,119 @@
+<!--
+Copyright 2025 Google LLC
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+
+<div class="home-container">
+  <!-- Header -->
+  <header class="app-header">
+    <div class="header-content">
+      <div class="header-left">
+        <h1 class="app-title">{{ title }}</h1>
+        <p class="app-subtitle">开箱即用的AI应用平台</p>
+      </div>
+      <div class="header-right">
+        <button mat-icon-button color="primary" (click)="goToDebug()" matTooltip="ADK调试工具">
+          <mat-icon>bug_report</mat-icon>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Search and Filter Section -->
+  <div class="search-section">
+    <div class="search-container">
+      <mat-form-field appearance="outline" class="search-field">
+        <mat-label>搜索应用</mat-label>
+        <input matInput [(ngModel)]="searchQuery" (ngModelChange)="onSearchChange()" placeholder="输入应用名称或功能...">
+        <mat-icon matSuffix>search</mat-icon>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="type-filter">
+        <mat-label>应用类型</mat-label>
+        <mat-select [(ngModel)]="selectedType" (selectionChange)="onTypeChange()">
+          <mat-option *ngFor="let type of appTypes" [value]="type.value">
+            {{ type.label }}
+          </mat-option>
+        </mat-select>
+      </mat-form-field>
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  <div *ngIf="isLoading" class="loading-container">
+    <mat-spinner diameter="50"></mat-spinner>
+    <p>加载应用中...</p>
+  </div>
+
+  <!-- Error State -->
+  <div *ngIf="error && !isLoading" class="error-container">
+    <mat-icon class="error-icon">error</mat-icon>
+    <h3>加载失败</h3>
+    <p>{{ error }}</p>
+    <button mat-raised-button color="primary" (click)="loadApps()">
+      重试
+    </button>
+  </div>
+
+  <!-- Apps Grid -->
+  <div *ngIf="!isLoading && !error" class="apps-grid">
+    <mat-card *ngFor="let app of filteredApps" class="app-card" (click)="navigateToApp(app)">
+      <div class="app-card-header">
+        <div class="app-info">
+          <h3 class="app-name">{{ getAppDisplayName(app) }}</h3>
+          <div class="app-type">
+            <mat-icon>{{ getAppTypeIcon(app.appType) }}</mat-icon>
+            <span>{{ getAppTypeLabel(app.appType) }}</span>
+          </div>
+        </div>
+        <div class="app-actions">
+          <button mat-icon-button color="primary" (click)="navigateToApp(app); $event.stopPropagation()">
+            <mat-icon>arrow_forward</mat-icon>
+          </button>
+        </div>
+      </div>
+
+      <div class="app-card-content">
+        <p class="app-description">{{ app.description }}</p>
+        
+        <div class="app-capabilities">
+          <mat-chip-set>
+            <mat-chip *ngFor="let capability of app.capabilities" class="capability-chip">
+              {{ capability }}
+            </mat-chip>
+          </mat-chip-set>
+        </div>
+
+        <div class="app-features" *ngIf="app.uiConfig.features.length > 0">
+          <div class="feature-item" *ngFor="let feature of app.uiConfig.features">
+            <mat-icon class="feature-icon">check_circle</mat-icon>
+            <span class="feature-text">{{ getFeatureLabel(feature) }}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="app-card-footer">
+        <span class="app-layout">布局: {{ getLayoutLabel(app.uiConfig.layout) }}</span>
+        <span class="app-theme">主题: {{ getThemeLabel(app.uiConfig.theme) }}</span>
+      </div>
+    </mat-card>
+  </div>
+
+  <!-- Empty State -->
+  <div *ngIf="!isLoading && !error && filteredApps.length === 0" class="empty-state">
+    <mat-icon class="empty-icon">apps</mat-icon>
+    <h3>没有找到应用</h3>
+    <p>尝试调整搜索条件或筛选器</p>
+  </div>
+</div>

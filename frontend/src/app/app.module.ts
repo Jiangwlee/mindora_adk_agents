@@ -24,6 +24,13 @@ import {HttpClientModule} from '@angular/common/http';
 import {MatButtonModule} from '@angular/material/button';
 import {MatFormFieldModule} from '@angular/material/form-field';
 import {MatInputModule} from '@angular/material/input';
+import {MatTabsModule} from '@angular/material/tabs';
+import {MatSelectModule} from '@angular/material/select';
+import {MatChipsModule} from '@angular/material/chips';
+import {MatProgressSpinnerModule} from '@angular/material/progress-spinner';
+import {MatCardModule} from '@angular/material/card';
+import {MatIconModule} from '@angular/material/icon';
+import {MatToolbarModule} from '@angular/material/toolbar';
 import {BrowserAnimationsModule} from '@angular/platform-browser/animations';
 import {AppComponent} from './app.component';
 import {ComponentModule} from './components/component.module';
@@ -37,9 +44,12 @@ import {SessionService} from './core/services/session.service';
 import {VideoService} from './core/services/video.service';
 import {WebSocketService} from './core/services/websocket.service';
 import { TraceService } from './core/services/trace.service';
+import { PlatformService } from './core/services/platform.service';
 
 @NgModule({
-  declarations: [AppComponent],
+  declarations: [
+    AppComponent
+  ],
   imports: [
     ComponentModule,
     BrowserModule,
@@ -49,6 +59,13 @@ import { TraceService } from './core/services/trace.service';
     MatInputModule,
     MatFormFieldModule,
     MatButtonModule,
+    MatTabsModule,
+    MatSelectModule,
+    MatChipsModule,
+    MatProgressSpinnerModule,
+    MatCardModule,
+    MatIconModule,
+    MatToolbarModule,
     BrowserAnimationsModule,
   ],
   providers: [
@@ -61,7 +78,8 @@ import { TraceService } from './core/services/trace.service';
     EvalService,
     ArtifactService,
     DownloadService,
-    TraceService
+    TraceService,
+    PlatformService
   ],
   bootstrap: [AppComponent],
 })

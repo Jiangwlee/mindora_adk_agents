@@ -518,6 +518,7 @@ export class ChatComponent implements OnInit, AfterViewInit, OnDestroy {
         }
 
         this.insertMessageBeforeLoadingMessage(this.streamingTextMessage);
+        this.changeDetectorRef.detectChanges();
 
         if (!this.useSse) {
           this.storeEvents(part, chunkJson, index);
@@ -539,6 +540,7 @@ export class ChatComponent implements OnInit, AfterViewInit, OnDestroy {
         }
         this.streamingTextMessage.text += newChunk;
         this.streamingTextMessageSubject.next(this.streamingTextMessage);
+        this.changeDetectorRef.detectChanges();
       }
     } else if (!part.thought) {
       this.isModelThinkingSubject.next(false);

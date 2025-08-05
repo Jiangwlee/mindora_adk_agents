@@ -67,6 +67,7 @@ import {TraceEventComponent} from './trace-tab/trace-event/trace-event.component
 import {TraceTabComponent} from './trace-tab/trace-tab.component';
 import {TraceTreeComponent} from './trace-tab/trace-tree/trace-tree.component';
 import {ViewImageDialogComponent} from './view-image-dialog/view-image-dialog.component';
+import {AdkDebugPageComponent} from './adk-debug-page/adk-debug-page.component';
 
 const COMPONENTS = [
   ChatComponent,
@@ -90,6 +91,7 @@ const COMPONENTS = [
   TraceTreeComponent,
   TraceEventComponent,
   JsonEditorComponent,
+  AdkDebugPageComponent,
 ];
 
 @NgModule({

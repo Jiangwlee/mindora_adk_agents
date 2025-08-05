@@ -17,17 +17,44 @@
 
 import {NgModule} from '@angular/core';
 import {RouterModule, Routes} from '@angular/router';
-import {AppComponent} from './app.component';
+import {HomePageComponent} from './components/home-page/home-page.component';
+import {ChatbotPageComponent} from './components/chatbot-page/chatbot-page.component';
+import {CustomPageComponent} from './components/custom-page/custom-page.component';
+import {AdkDebugPageComponent} from './components/adk-debug-page/adk-debug-page.component';
 
 const routes: Routes = [
   {
     path: '',
-    component: AppComponent,
+    component: HomePageComponent,
+    title: 'AI Agent App Platform'
+  },
+  {
+    path: 'app/chatbot/:name',
+    component: ChatbotPageComponent,
+    title: 'Chatbot App'
+  },
+  {
+    path: 'app/custom/:name',
+    component: CustomPageComponent,
+    title: 'Custom App'
+  },
+  {
+    path: 'adk-debug',
+    component: AdkDebugPageComponent,
+    title: 'ADK Debug Tool'
+  },
+  {
+    path: '**',
+    redirectTo: ''
   }
 ];
 
 @NgModule({
-  imports: [RouterModule.forRoot(routes)],
+  imports: [RouterModule.forRoot(routes, { 
+    enableTracing: true,
+    useHash: false,
+    onSameUrlNavigation: 'reload'
+  })],
   exports: [RouterModule],
 })
 export class AppRoutingModule {}

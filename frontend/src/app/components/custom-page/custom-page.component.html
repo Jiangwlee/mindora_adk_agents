@@ -1,0 +1,273 @@
+<!--
+Copyright 2025 Google LLC
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+
+<div class="custom-container">
+  <!-- Toolbar -->
+  <mat-toolbar class="app-toolbar" [style.background]="getPrimaryColor()">
+    <button mat-icon-button (click)="goBack()">
+      <mat-icon>arrow_back</mat-icon>
+    </button>
+    <div class="toolbar-content">
+      <div class="app-info">
+        <h2 class="app-title">{{ appDisplayName || appName }}</h2>
+        <p class="app-description">{{ appDescription }}</p>
+      </div>
+      <div class="toolbar-actions">
+        <button mat-icon-button (click)="goToHome()" matTooltip="返回主页">
+          <mat-icon>home</mat-icon>
+        </button>
+      </div>
+    </div>
+  </mat-toolbar>
+
+  <!-- Loading State -->
+  <div *ngIf="isLoading" class="loading-container">
+    <mat-spinner diameter="60"></mat-spinner>
+    <p>加载应用中...</p>
+  </div>
+
+  <!-- Error State -->
+  <div *ngIf="error && !isLoading" class="error-container">
+    <mat-icon class="error-icon">error</mat-icon>
+    <h3>加载失败</h3>
+    <p>{{ error }}</p>
+    <button mat-raised-button color="primary" (click)="goBack()">
+      返回主页
+    </button>
+  </div>
+
+  <!-- Main Content -->
+  <div *ngIf="!isLoading && !error" class="main-content">
+    <!-- App Info Cards -->
+    <div class="info-cards">
+      <mat-card class="info-card">
+        <div class="card-header">
+          <mat-icon class="card-icon">dashboard</mat-icon>
+          <h3>应用概览</h3>
+        </div>
+        <div class="card-content">
+          <div class="info-grid">
+            <div class="info-item">
+              <mat-icon>apps</mat-icon>
+              <div>
+                <strong>类型</strong>
+                <span>Custom 应用</span>
+              </div>
+            </div>
+            <div class="info-item">
+              <mat-icon>category</mat-icon>
+              <div>
+                <strong>布局</strong>
+                <span>仪表板</span>
+              </div>
+            </div>
+            <div class="info-item">
+              <mat-icon>palette</mat-icon>
+              <div>
+                <strong>主题</strong>
+                <span>现代风格</span>
+              </div>
+            </div>
+            <div class="info-item">
+              <mat-icon>color_lens</mat-icon>
+              <div>
+                <strong>主色调</strong>
+                <span class="color-preview" [style.background]="getPrimaryColor()"></span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </mat-card>
+
+      <mat-card class="info-card">
+        <div class="card-header">
+          <mat-icon class="card-icon">build</mat-icon>
+          <h3>功能特性</h3>
+        </div>
+        <div class="card-content">
+          <div class="features-grid">
+            <div class="feature-item" *ngIf="hasFeature('file_upload')">
+              <mat-icon class="feature-icon">upload_file</mat-icon>
+              <div class="feature-details">
+                <strong>文件上传</strong>
+                <span>支持多种数据格式上传</span>
+              </div>
+            </div>
+            <div class="feature-item" *ngIf="hasFeature('chart_generation')">
+              <mat-icon class="feature-icon">insert_chart</mat-icon>
+              <div class="feature-details">
+                <strong>图表生成</strong>
+                <span>自动生成数据可视化图表</span>
+              </div>
+            </div>
+            <div class="feature-item" *ngIf="hasFeature('data_export')">
+              <mat-icon class="feature-icon">download</mat-icon>
+              <div class="feature-details">
+                <strong>数据导出</strong>
+                <span>支持多种格式导出</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </mat-card>
+    </div>
+
+    <!-- Main Application Area -->
+    <div class="app-area">
+      <mat-card class="app-card">
+        <mat-tab-group [(selectedIndex)]="selectedTab" (selectedTabChange)="onTabChange($event)">
+          <!-- Data Analysis Tab -->
+          <mat-tab label="数据分析">
+            <div class="tab-content">
+              <div class="placeholder-content">
+                <mat-icon class="tab-icon">analytics</mat-icon>
+                <h3>数据分析工作区</h3>
+                <p>这里是 {{ appDisplayName }} 的数据分析界面</p>
+                <div class="placeholder-features">
+                  <div class="placeholder-feature">
+                    <mat-icon>table_chart</mat-icon>
+                    <span>数据表格</span>
+                  </div>
+                  <div class="placeholder-feature">
+                    <mat-icon>functions</mat-icon>
+                    <span>统计分析</span>
+                  </div>
+                  <div class="placeholder-feature">
+                    <mat-icon>insights</mat-icon>
+                    <span>数据洞察</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </mat-tab>
+
+          <!-- Chart Generation Tab -->
+          <mat-tab label="图表生成">
+            <div class="tab-content">
+              <div class="placeholder-content">
+                <mat-icon class="tab-icon">bar_chart</mat-icon>
+                <h3>图表生成器</h3>
+                <p>基于数据自动生成各种类型的可视化图表</p>
+                <div class="chart-types">
+                  <div class="chart-type">
+                    <mat-icon>pie_chart</mat-icon>
+                    <span>饼图</span>
+                  </div>
+                  <div class="chart-type">
+                    <mat-icon>show_chart</mat-icon>
+                    <span>折线图</span>
+                  </div>
+                  <div class="chart-type">
+                    <mat-icon>stacked_bar_chart</mat-icon>
+                    <span>柱状图</span>
+                  </div>
+                  <div class="chart-type">
+                    <mat-icon>scatter_plot</mat-icon>
+                    <span>散点图</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </mat-tab>
+
+          <!-- Report Generation Tab -->
+          <mat-tab label="报告生成">
+            <div class="tab-content">
+              <div class="placeholder-content">
+                <mat-icon class="tab-icon">description</mat-icon>
+                <h3>智能报告生成</h3>
+                <p>基于分析结果自动生成专业的数据报告</p>
+                <div class="report-features">
+                  <div class="report-feature">
+                    <mat-icon>auto_awesome</mat-icon>
+                    <span>智能总结</span>
+                  </div>
+                  <div class="report-feature">
+                    <mat-icon>format_list_numbered</mat-icon>
+                    <span>结构化报告</span>
+                  </div>
+                  <div class="report-feature">
+                    <mat-icon>share</mat-icon>
+                    <span>一键分享</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </mat-tab>
+
+          <!-- Settings Tab -->
+          <mat-tab label="设置">
+            <div class="tab-content">
+              <div class="placeholder-content">
+                <mat-icon class="tab-icon">settings</mat-icon>
+                <h3>应用设置</h3>
+                <p>配置应用参数和个人偏好设置</p>
+                <div class="settings-options">
+                  <div class="setting-option">
+                    <mat-icon>tune</mat-icon>
+                    <span>分析参数</span>
+                  </div>
+                  <div class="setting-option">
+                    <mat-icon>style</mat-icon>
+                    <span>显示设置</span>
+                  </div>
+                  <div class="setting-option">
+                    <mat-icon>notifications</mat-icon>
+                    <span>通知设置</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </mat-tab>
+        </mat-tab-group>
+      </mat-card>
+    </div>
+
+    <!-- Capabilities Section -->
+    <div class="capabilities-section">
+      <mat-card class="capabilities-card">
+        <div class="card-header">
+          <mat-icon class="card-icon">psychology</mat-icon>
+          <h3>核心能力</h3>
+        </div>
+        <div class="capabilities-content">
+          <mat-chip-set>
+            <mat-chip *ngFor="let capability of appData?.capabilities" class="capability-chip">
+              <mat-icon class="chip-icon">star</mat-icon>
+              {{ capability }}
+            </mat-chip>
+          </mat-chip-set>
+        </div>
+      </mat-card>
+    </div>
+
+    <!-- Status Bar -->
+    <div class="status-bar">
+      <div class="status-item">
+        <mat-icon class="status-icon">info</mat-icon>
+        <span>应用名称: {{ appName }}</span>
+      </div>
+      <div class="status-item">
+        <mat-icon class="status-icon">build</mat-icon>
+        <span>状态: 开发中</span>
+      </div>
+      <div class="status-item">
+        <mat-icon class="status-icon">palette</mat-icon>
+        <span>主题: 现代风格</span>
+      </div>
+    </div>
+  </div>
+</div>
