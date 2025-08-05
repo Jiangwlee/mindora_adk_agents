@@ -415,4 +415,7 @@ dev_data/
 test_data/
 local_config/
 
+# Images and media
+images/
+
 *.angular/

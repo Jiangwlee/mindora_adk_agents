@@ -371,11 +371,11 @@ class AdkWebServer:
             logger.debug(
                 "Generated event in agent run streaming: %s", sse_event
             )
-            yield f"data: {sse_event}\\n\\n"
+            yield f"data: {sse_event}\n\n"
         except Exception as e:
           logger.exception("Error in event_generator: %s", e)
           # You might want to yield an error event here
-          yield f'data: {{"error": "{str(e)}"}}\\n\\n'
+          yield f'data: {{"error": "{str(e)}"}}\n\n'
 
       # Returns a streaming response with the proper media type for SSE
       return StreamingResponse(
