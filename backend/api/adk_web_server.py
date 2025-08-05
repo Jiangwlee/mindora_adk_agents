@@ -137,46 +137,15 @@ class InMemoryExporter(export_lib.SpanExporter):
     self._spans.clear()
 
 
-class AgentRunRequest(common.BaseModel):
-  app_name: str
-  user_id: str
-  session_id: str
-  new_message: types.Content
-  streaming: bool = False
-  state_delta: Optional[dict[str, Any]] = None
-
-
-class AddSessionToEvalSetRequest(common.BaseModel):
-  eval_id: str
-  session_id: str
-  user_id: str
-
-
-class RunEvalRequest(common.BaseModel):
-  eval_ids: list[str]  # if empty, then all evals in the eval set are run.
-  eval_metrics: list[EvalMetric]
-
-
-class RunEvalResult(common.BaseModel):
-  eval_set_file: str
-  eval_set_id: str
-  eval_id: str
-  final_eval_status: EvalStatus
-  eval_metric_results: list[tuple[EvalMetric, EvalMetricResult]] = Field(
-      deprecated=True,
-      default=[],
-      description=(
-          "This field is deprecated, use overall_eval_metric_results instead."
-      ),
-  )
-  overall_eval_metric_results: list[EvalMetricResult]
-  eval_metric_result_per_invocation: list[EvalMetricResultPerInvocation]
-  user_id: str
-  session_id: str
-
-
-class GetEventGraphResult(common.BaseModel):
-  dot_src: str
+# Import models from the models package
+from ..models import (
+    AgentRunRequest,
+    AddSessionToEvalSetRequest,
+    RunEvalRequest,
+    RunEvalResult,
+    GetEventGraphResult,
+    HealthCheckResponse,
+)
 
 
 class AdkWebServer:
@@ -332,6 +301,17 @@ class AdkWebServer:
           allow_credentials=True,
           allow_methods=["*"],
           allow_headers=["*"],
+      )
+
+    @app.get("/health", response_model_exclude_none=True)
+    def health_check() -> HealthCheckResponse:
+      """Health check endpoint."""
+      import time
+      return HealthCheckResponse(
+          status="healthy",
+          timestamp=time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+          version="1.0.0",
+          uptime=time.time()
       )
 
     @app.get("/list-apps")
