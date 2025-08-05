@@ -1,3 +1,6 @@
+# justfile
+# pylint: skip-file
+# type: ignore
 # Justfile for Mindora ADK Agents
 
 # Install dependencies
@@ -6,11 +9,15 @@ install:
 
 # Run the FastAPI server
 run:
-    uv run python run_server.py --agents-dir backend/agents
+    just run-backend &
+    just run-web
+
+run-backend:
+    uv run python run_server.py --agents-dir backend/agents --allow-origins "http://localhost:4200"
 
 # Run the FastAPI server with web interface
 run-web:
-    uv run python -m uvicorn backend.fast_api:get_fast_api_app --host 127.0.0.1 --port 8000 --reload --factory
+    cd frontend && npm run serve --backend=http://localhost:8000
 
 # Test imports
 test:
