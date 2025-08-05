@@ -12,6 +12,11 @@ run:
     just run-backend &
     just run-web
 
+stop:
+    -pkill -f "run_server.py"
+    -pkill -f "npm run serve"
+    -pkill -f "uvicorn.*fast_api"
+
 run-backend:
     uv run python run_server.py --agents-dir backend/agents --allow-origins "http://localhost:4200"
 

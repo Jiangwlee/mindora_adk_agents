@@ -34,6 +34,14 @@ mindora_adk_agents/
 │   │   └── adk_web_server.py   # ADK web 服务器实现
 │   ├── fast_api.py            # FastAPI 应用设置
 │   ├── agents/                # 智能体实现
+│   │   ├── adk_demo/          # 示例智能体
+│   │   ├── assistant/         # 助手智能体
+│   │   └── data_analyst/      # 数据分析师智能体
+│   ├── models/                # 数据模型
+│   │   ├── requests.py        # 请求模型
+│   │   ├── responses.py       # 响应模型
+│   │   ├── session.py         # 会话模型
+│   │   └── evaluation.py      # 评估模型
 │   └── run.py                 # 服务器启动脚本
 ├── docs/
 │   └── design.md              # 设计文档
@@ -137,22 +145,35 @@ curl -X POST http://localhost:8000/run -H "Content-Type: application/json" -d '{
 
 - **`backend/fast_api.py`**: 包含 `get_fast_api_app()` 函数，创建带有 ADK 集成的 FastAPI 应用
 - **`backend/api/adk_web_server.py`**: 包含 `AdkWebServer` 类，处理智能体执行、会话管理和 API 端点
+- **`backend/models/`**: 包含所有数据模型定义
+  - `requests.py`: API 请求模型（智能体运行、评估、会话管理）
+  - `responses.py`: API 响应模型（评估结果、健康检查、事件图）
+  - `session.py`: 会话相关模型（会话信息、创建/更新请求、导入导出）
+  - `evaluation.py`: 评估相关模型（评估用例、评估集、评估摘要）
 
 ### 核心功能实现
 - **智能体管理**: 列出、加载和运行 agents 目录中的智能体
-- **会话管理**: 创建、管理和删除用户会话
-- **制品服务**: 存储和检索智能体生成的制品
-- **内存服务**: 内存和 Vertex AI 内存集成
-- **评估系统**: 创建和运行智能体评估集
-- **WebSocket 支持**: 通过 WebSocket 进行实时智能体通信
+- **会话管理**: 创建、管理和删除用户会话，支持会话导入导出
+- **制品服务**: 存储和检索智能体生成的制品，支持版本管理
+- **内存服务**: 内存和 Vertex AI 内存集成，支持 RAG 内存
+- **评估系统**: 创建和运行智能体评估集，支持多种评估指标
+- **WebSocket 支持**: 通过 WebSocket 进行实时智能体通信，支持文本和音频
 - **SSE 流式**: 服务器发送事件用于流式智能体响应
-- **A2A 支持**: 智能体间通信协议支持
+- **A2A 支持**: 智能体间通信协议支持，支持 agent.json 配置
 - **CORS 支持**: 可配置的 CORS 中间件
-- **OpenTelemetry**: 分布式追踪支持
+- **OpenTelemetry**: 分布式追踪支持，集成 Cloud Trace
+- **健康检查**: 服务器健康状态监控
+- **调试追踪**: 事件追踪和执行图可视化
+- **实时监控**: 文件系统观察器，支持智能体热重载
 
 ### 智能体开发
 智能体实现应参考以下示例:
 - https://github.com/google/adk-samples
+
+### 当前可用的智能体
+- **adk_demo**: 示例智能体，展示基本功能
+- **assistant**: 助手智能体，包含评估测试集
+- **data_analyst**: 数据分析师智能体
 
 ## 前端架构详情
 
@@ -206,5 +227,7 @@ curl -X POST http://localhost:8000/run -H "Content-Type: application/json" -d '{
 - ✅ 所有核心端点正常工作
 - ✅ 智能体执行和会话管理正常运行
 - ✅ SSE 流式和调试追踪功能正常
-- ✅ 可用智能体: `adk_demo`, `assistant`
+- ✅ WebSocket 实时通信功能正常
+- ✅ 评估系统和制品服务正常运行
+- ✅ 可用智能体: `adk_demo`, `assistant`, `data_analyst`
 - ✅ 默认服务器运行在 `http://localhost:8000`

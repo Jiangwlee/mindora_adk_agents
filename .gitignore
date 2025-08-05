@@ -411,3 +411,5 @@ evaluations/
 dev_data/
 test_data/
 local_config/
+
+.angular/

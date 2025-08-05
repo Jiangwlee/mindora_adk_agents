@@ -22,6 +22,7 @@ from fastapi.responses import StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.websockets import WebSocket
 from fastapi.websockets import WebSocketDisconnect
+from typing import Optional
 from google.genai import types
 import graphviz
 from opentelemetry import trace
@@ -140,11 +141,17 @@ class InMemoryExporter(export_lib.SpanExporter):
 # Import models from the models package
 from ..models import (
     AgentRunRequest,
-    AddSessionToEvalSetRequest,
-    RunEvalRequest,
-    RunEvalResult,
-    GetEventGraphResult,
     HealthCheckResponse,
+)
+
+# Import platform service
+from ..services.platform_service import PlatformService
+
+# Import routers
+from .routers import (
+    setup_platform_router,
+    setup_apps_router,
+    setup_core_router,
 )
 
 
@@ -204,6 +211,11 @@ class AdkWebServer:
     self.runners_to_clean: set[str] = set()
     self.current_app_name_ref: SharedValue[str] = SharedValue(value="")
     self.runner_dict = {}
+    # Platform service for app session management
+    self.platform_service = PlatformService(
+        agent_loader=agent_loader,
+        session_service=session_service
+    )
 
   async def get_runner_async(self, app_name: str) -> Runner:
     """Returns the runner for the given app."""
@@ -303,474 +315,15 @@ class AdkWebServer:
           allow_headers=["*"],
       )
 
-    @app.get("/health", response_model_exclude_none=True)
-    def health_check() -> HealthCheckResponse:
-      """Health check endpoint."""
-      import time
-      return HealthCheckResponse(
-          status="healthy",
-          timestamp=time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-          version="1.0.0",
-          uptime=time.time()
-      )
-
-    @app.get("/list-apps")
+    # 设置核心路由器
+    core_router = setup_core_router(self.get_runner_async)
+    
+    # 重写核心路由器中的方法以访问实例变量
+    @core_router.get("/list-apps")
     def list_apps() -> list[str]:
       return self.agent_loader.list_agents()
 
-    @app.get("/debug/trace/{event_id}")
-    def get_trace_dict(event_id: str) -> Any:
-      event_dict = trace_dict.get(event_id, None)
-      if event_dict is None:
-        raise HTTPException(status_code=404, detail="Trace not found")
-      return event_dict
-
-    @app.get("/debug/trace/session/{session_id}")
-    def get_session_trace(session_id: str) -> Any:
-      spans = memory_exporter.get_finished_spans(session_id)
-      if not spans:
-        return []
-      return [
-          {
-              "name": s.name,
-              "span_id": s.context.span_id,
-              "trace_id": s.context.trace_id,
-              "start_time": s.start_time,
-              "end_time": s.end_time,
-              "attributes": dict(s.attributes),
-              "parent_span_id": s.parent.span_id if s.parent else None,
-          }
-          for s in spans
-      ]
-
-    @app.get(
-        "/apps/{app_name}/users/{user_id}/sessions/{session_id}",
-        response_model_exclude_none=True,
-    )
-    async def get_session(
-        app_name: str, user_id: str, session_id: str
-    ) -> Session:
-      session = await self.session_service.get_session(
-          app_name=app_name, user_id=user_id, session_id=session_id
-      )
-      if not session:
-        raise HTTPException(status_code=404, detail="Session not found")
-      self.current_app_name_ref.value = app_name
-      return session
-
-    @app.get(
-        "/apps/{app_name}/users/{user_id}/sessions",
-        response_model_exclude_none=True,
-    )
-    async def list_sessions(app_name: str, user_id: str) -> list[Session]:
-      list_sessions_response = await self.session_service.list_sessions(
-          app_name=app_name, user_id=user_id
-      )
-      return [
-          session
-          for session in list_sessions_response.sessions
-          # Remove sessions that were generated as a part of Eval.
-          if not session.id.startswith(EVAL_SESSION_ID_PREFIX)
-      ]
-
-    @app.post(
-        "/apps/{app_name}/users/{user_id}/sessions/{session_id}",
-        response_model_exclude_none=True,
-    )
-    async def create_session_with_id(
-        app_name: str,
-        user_id: str,
-        session_id: str,
-        state: Optional[dict[str, Any]] = None,
-    ) -> Session:
-      if (
-          await self.session_service.get_session(
-              app_name=app_name, user_id=user_id, session_id=session_id
-          )
-          is not None
-      ):
-        raise HTTPException(
-            status_code=400, detail=f"Session already exists: {session_id}"
-        )
-      session = await self.session_service.create_session(
-          app_name=app_name, user_id=user_id, state=state, session_id=session_id
-      )
-      logger.info("New session created: %s", session_id)
-      return session
-
-    @app.post(
-        "/apps/{app_name}/users/{user_id}/sessions",
-        response_model_exclude_none=True,
-    )
-    async def create_session(
-        app_name: str,
-        user_id: str,
-        state: Optional[dict[str, Any]] = None,
-        events: Optional[list[Event]] = None,
-    ) -> Session:
-      session = await self.session_service.create_session(
-          app_name=app_name, user_id=user_id, state=state
-      )
-
-      if events:
-        for event in events:
-          await self.session_service.append_event(session=session, event=event)
-
-      logger.info("New session created")
-      return session
-
-    @app.post(
-        "/apps/{app_name}/eval_sets/{eval_set_id}",
-        response_model_exclude_none=True,
-    )
-    def create_eval_set(
-        app_name: str,
-        eval_set_id: str,
-    ):
-      """Creates an eval set, given the id."""
-      try:
-        self.eval_sets_manager.create_eval_set(app_name, eval_set_id)
-      except ValueError as ve:
-        raise HTTPException(
-            status_code=400,
-            detail=str(ve),
-        ) from ve
-
-    @app.get(
-        "/apps/{app_name}/eval_sets",
-        response_model_exclude_none=True,
-    )
-    def list_eval_sets(app_name: str) -> list[str]:
-      """Lists all eval sets for the given app."""
-      try:
-        return self.eval_sets_manager.list_eval_sets(app_name)
-      except NotFoundError as e:
-        logger.warning(e)
-        return []
-
-    @app.post(
-        "/apps/{app_name}/eval_sets/{eval_set_id}/add_session",
-        response_model_exclude_none=True,
-    )
-    async def add_session_to_eval_set(
-        app_name: str, eval_set_id: str, req: AddSessionToEvalSetRequest
-    ):
-      # Get the session
-      session = await self.session_service.get_session(
-          app_name=app_name, user_id=req.user_id, session_id=req.session_id
-      )
-      assert session, "Session not found."
-
-      # Convert the session data to eval invocations
-      invocations = evals.convert_session_to_eval_invocations(session)
-
-      # Populate the session with initial session state.
-      initial_session_state = create_empty_state(
-          self.agent_loader.load_agent(app_name)
-      )
-
-      new_eval_case = EvalCase(
-          eval_id=req.eval_id,
-          conversation=invocations,
-          session_input=SessionInput(
-              app_name=app_name,
-              user_id=req.user_id,
-              state=initial_session_state,
-          ),
-          creation_timestamp=time.time(),
-      )
-
-      try:
-        self.eval_sets_manager.add_eval_case(
-            app_name, eval_set_id, new_eval_case
-        )
-      except ValueError as ve:
-        raise HTTPException(status_code=400, detail=str(ve)) from ve
-
-    @app.get(
-        "/apps/{app_name}/eval_sets/{eval_set_id}/evals",
-        response_model_exclude_none=True,
-    )
-    def list_evals_in_eval_set(
-        app_name: str,
-        eval_set_id: str,
-    ) -> list[str]:
-      """Lists all evals in an eval set."""
-      eval_set_data = self.eval_sets_manager.get_eval_set(app_name, eval_set_id)
-
-      if not eval_set_data:
-        raise HTTPException(
-            status_code=400, detail=f"Eval set `{eval_set_id}` not found."
-        )
-
-      return sorted([x.eval_id for x in eval_set_data.eval_cases])
-
-    @app.get(
-        "/apps/{app_name}/eval_sets/{eval_set_id}/evals/{eval_case_id}",
-        response_model_exclude_none=True,
-    )
-    def get_eval(
-        app_name: str, eval_set_id: str, eval_case_id: str
-    ) -> EvalCase:
-      """Gets an eval case in an eval set."""
-      eval_case_to_find = self.eval_sets_manager.get_eval_case(
-          app_name, eval_set_id, eval_case_id
-      )
-
-      if eval_case_to_find:
-        return eval_case_to_find
-
-      raise HTTPException(
-          status_code=404,
-          detail=(
-              f"Eval set `{eval_set_id}` or Eval `{eval_case_id}` not found."
-          ),
-      )
-
-    @app.put(
-        "/apps/{app_name}/eval_sets/{eval_set_id}/evals/{eval_case_id}",
-        response_model_exclude_none=True,
-    )
-    def update_eval(
-        app_name: str,
-        eval_set_id: str,
-        eval_case_id: str,
-        updated_eval_case: EvalCase,
-    ):
-      if (
-          updated_eval_case.eval_id
-          and updated_eval_case.eval_id != eval_case_id
-      ):
-        raise HTTPException(
-            status_code=400,
-            detail=(
-                "Eval id in EvalCase should match the eval id in the API route."
-            ),
-        )
-
-      # Overwrite the value. We are either overwriting the same value or an empty
-      # field.
-      updated_eval_case.eval_id = eval_case_id
-      try:
-        self.eval_sets_manager.update_eval_case(
-            app_name, eval_set_id, updated_eval_case
-        )
-      except NotFoundError as nfe:
-        raise HTTPException(status_code=404, detail=str(nfe)) from nfe
-
-    @app.delete("/apps/{app_name}/eval_sets/{eval_set_id}/evals/{eval_case_id}")
-    def delete_eval(app_name: str, eval_set_id: str, eval_case_id: str):
-      try:
-        self.eval_sets_manager.delete_eval_case(
-            app_name, eval_set_id, eval_case_id
-        )
-      except NotFoundError as nfe:
-        raise HTTPException(status_code=404, detail=str(nfe)) from nfe
-
-    @app.post(
-        "/apps/{app_name}/eval_sets/{eval_set_id}/run_eval",
-        response_model_exclude_none=True,
-    )
-    async def run_eval(
-        app_name: str, eval_set_id: str, req: RunEvalRequest
-    ) -> list[RunEvalResult]:
-      """Runs an eval given the details in the eval request."""
-      # Create a mapping from eval set file to all the evals that needed to be
-      # run.
-      try:
-        from ..evaluation.local_eval_service import LocalEvalService
-        from .cli_eval import _collect_eval_results
-        from .cli_eval import _collect_inferences
-
-        eval_set = self.eval_sets_manager.get_eval_set(app_name, eval_set_id)
-
-        if not eval_set:
-          raise HTTPException(
-              status_code=400, detail=f"Eval set `{eval_set_id}` not found."
-          )
-
-        root_agent = self.agent_loader.load_agent(app_name)
-
-        eval_case_results = []
-
-        eval_service = LocalEvalService(
-            root_agent=root_agent,
-            eval_sets_manager=self.eval_sets_manager,
-            eval_set_results_manager=self.eval_set_results_manager,
-            session_service=self.session_service,
-            artifact_service=self.artifact_service,
-        )
-        inference_request = InferenceRequest(
-            app_name=app_name,
-            eval_set_id=eval_set.eval_set_id,
-            eval_case_ids=req.eval_ids,
-            inference_config=InferenceConfig(),
-        )
-        inference_results = await _collect_inferences(
-            inference_requests=[inference_request], eval_service=eval_service
-        )
-
-        eval_case_results = await _collect_eval_results(
-            inference_results=inference_results,
-            eval_service=eval_service,
-            eval_metrics=req.eval_metrics,
-        )
-      except ModuleNotFoundError as e:
-        logger.exception("%s", e)
-        raise HTTPException(
-            status_code=400, detail=MISSING_EVAL_DEPENDENCIES_MESSAGE
-        ) from e
-
-      run_eval_results = []
-      for eval_case_result in eval_case_results:
-        run_eval_results.append(
-            RunEvalResult(
-                eval_set_file=eval_case_result.eval_set_file,
-                eval_set_id=eval_set_id,
-                eval_id=eval_case_result.eval_id,
-                final_eval_status=eval_case_result.final_eval_status,
-                overall_eval_metric_results=eval_case_result.overall_eval_metric_results,
-                eval_metric_result_per_invocation=eval_case_result.eval_metric_result_per_invocation,
-                user_id=eval_case_result.user_id,
-                session_id=eval_case_result.session_id,
-            )
-        )
-
-      return run_eval_results
-
-    @app.get(
-        "/apps/{app_name}/eval_results/{eval_result_id}",
-        response_model_exclude_none=True,
-    )
-    def get_eval_result(
-        app_name: str,
-        eval_result_id: str,
-    ) -> EvalSetResult:
-      """Gets the eval result for the given eval id."""
-      try:
-        return self.eval_set_results_manager.get_eval_set_result(
-            app_name, eval_result_id
-        )
-      except ValueError as ve:
-        raise HTTPException(status_code=404, detail=str(ve)) from ve
-      except ValidationError as ve:
-        raise HTTPException(status_code=500, detail=str(ve)) from ve
-
-    @app.get(
-        "/apps/{app_name}/eval_results",
-        response_model_exclude_none=True,
-    )
-    def list_eval_results(app_name: str) -> list[str]:
-      """Lists all eval results for the given app."""
-      return self.eval_set_results_manager.list_eval_set_results(app_name)
-
-    @app.get(
-        "/apps/{app_name}/eval_metrics",
-        response_model_exclude_none=True,
-    )
-    def list_eval_metrics(app_name: str) -> list[MetricInfo]:
-      """Lists all eval metrics for the given app."""
-      try:
-        from ..evaluation.metric_evaluator_registry import DEFAULT_METRIC_EVALUATOR_REGISTRY
-
-        # Right now we ignore the app_name as eval metrics are not tied to the
-        # app_name, but they could be moving forward.
-        return DEFAULT_METRIC_EVALUATOR_REGISTRY.get_registered_metrics()
-      except ModuleNotFoundError as e:
-        logger.exception("%s\n%s", MISSING_EVAL_DEPENDENCIES_MESSAGE, e)
-        raise HTTPException(
-            status_code=400, detail=MISSING_EVAL_DEPENDENCIES_MESSAGE
-        ) from e
-
-    @app.delete("/apps/{app_name}/users/{user_id}/sessions/{session_id}")
-    async def delete_session(app_name: str, user_id: str, session_id: str):
-      await self.session_service.delete_session(
-          app_name=app_name, user_id=user_id, session_id=session_id
-      )
-
-    @app.get(
-        "/apps/{app_name}/users/{user_id}/sessions/{session_id}/artifacts/{artifact_name}",
-        response_model_exclude_none=True,
-    )
-    async def load_artifact(
-        app_name: str,
-        user_id: str,
-        session_id: str,
-        artifact_name: str,
-        version: Optional[int] = Query(None),
-    ) -> Optional[types.Part]:
-      artifact = await self.artifact_service.load_artifact(
-          app_name=app_name,
-          user_id=user_id,
-          session_id=session_id,
-          filename=artifact_name,
-          version=version,
-      )
-      if not artifact:
-        raise HTTPException(status_code=404, detail="Artifact not found")
-      return artifact
-
-    @app.get(
-        "/apps/{app_name}/users/{user_id}/sessions/{session_id}/artifacts/{artifact_name}/versions/{version_id}",
-        response_model_exclude_none=True,
-    )
-    async def load_artifact_version(
-        app_name: str,
-        user_id: str,
-        session_id: str,
-        artifact_name: str,
-        version_id: int,
-    ) -> Optional[types.Part]:
-      artifact = await self.artifact_service.load_artifact(
-          app_name=app_name,
-          user_id=user_id,
-          session_id=session_id,
-          filename=artifact_name,
-          version=version_id,
-      )
-      if not artifact:
-        raise HTTPException(status_code=404, detail="Artifact not found")
-      return artifact
-
-    @app.get(
-        "/apps/{app_name}/users/{user_id}/sessions/{session_id}/artifacts",
-        response_model_exclude_none=True,
-    )
-    async def list_artifact_names(
-        app_name: str, user_id: str, session_id: str
-    ) -> list[str]:
-      return await self.artifact_service.list_artifact_keys(
-          app_name=app_name, user_id=user_id, session_id=session_id
-      )
-
-    @app.get(
-        "/apps/{app_name}/users/{user_id}/sessions/{session_id}/artifacts/{artifact_name}/versions",
-        response_model_exclude_none=True,
-    )
-    async def list_artifact_versions(
-        app_name: str, user_id: str, session_id: str, artifact_name: str
-    ) -> list[int]:
-      return await self.artifact_service.list_versions(
-          app_name=app_name,
-          user_id=user_id,
-          session_id=session_id,
-          filename=artifact_name,
-      )
-
-    @app.delete(
-        "/apps/{app_name}/users/{user_id}/sessions/{session_id}/artifacts/{artifact_name}",
-    )
-    async def delete_artifact(
-        app_name: str, user_id: str, session_id: str, artifact_name: str
-    ):
-      await self.artifact_service.delete_artifact(
-          app_name=app_name,
-          user_id=user_id,
-          session_id=session_id,
-          filename=artifact_name,
-      )
-
-    @app.post("/run", response_model_exclude_none=True)
+    @core_router.post("/run", response_model_exclude_none=True)
     async def agent_run(req: AgentRunRequest) -> list[Event]:
       session = await self.session_service.get_session(
           app_name=req.app_name, user_id=req.user_id, session_id=req.session_id
@@ -790,7 +343,7 @@ class AdkWebServer:
       logger.debug("Events generated: %s", events)
       return events
 
-    @app.post("/run_sse")
+    @core_router.post("/run_sse")
     async def agent_run_sse(req: AgentRunRequest) -> StreamingResponse:
       # SSE endpoint
       session = await self.session_service.get_session(
@@ -818,11 +371,11 @@ class AdkWebServer:
             logger.debug(
                 "Generated event in agent run streaming: %s", sse_event
             )
-            yield f"data: {sse_event}\n\n"
+            yield f"data: {sse_event}\\n\\n"
         except Exception as e:
           logger.exception("Error in event_generator: %s", e)
           # You might want to yield an error event here
-          yield f'data: {{"error": "{str(e)}"}}\n\n'
+          yield f'data: {{"error": "{str(e)}"}}\\n\\n'
 
       # Returns a streaming response with the proper media type for SSE
       return StreamingResponse(
@@ -830,121 +383,52 @@ class AdkWebServer:
           media_type="text/event-stream",
       )
 
-    @app.get(
-        "/apps/{app_name}/users/{user_id}/sessions/{session_id}/events/{event_id}/graph",
-        response_model_exclude_none=True,
-    )
-    async def get_event_graph(
-        app_name: str, user_id: str, session_id: str, event_id: str
-    ):
-      session = await self.session_service.get_session(
-          app_name=app_name, user_id=user_id, session_id=session_id
-      )
-      session_events = session.events if session else []
-      event = next((x for x in session_events if x.id == event_id), None)
-      if not event:
-        return {}
+    @core_router.get("/debug/trace/{event_id}")
+    def get_trace_dict(event_id: str) -> Any:
+      event_dict = trace_dict.get(event_id, None)
+      if event_dict is None:
+        raise HTTPException(status_code=404, detail="Trace not found")
+      return event_dict
 
-      function_calls = event.get_function_calls()
-      function_responses = event.get_function_responses()
-      root_agent = self.agent_loader.load_agent(app_name)
-      dot_graph = None
-      if function_calls:
-        function_call_highlights = []
-        for function_call in function_calls:
-          from_name = event.author
-          to_name = function_call.name
-          function_call_highlights.append((from_name, to_name))
-          dot_graph = await agent_graph.get_agent_graph(
-              root_agent, function_call_highlights
-          )
-      elif function_responses:
-        function_responses_highlights = []
-        for function_response in function_responses:
-          from_name = function_response.name
-          to_name = event.author
-          function_responses_highlights.append((from_name, to_name))
-          dot_graph = await agent_graph.get_agent_graph(
-              root_agent, function_responses_highlights
-          )
-      else:
-        from_name = event.author
-        to_name = ""
-        dot_graph = await agent_graph.get_agent_graph(
-            root_agent, [(from_name, to_name)]
-        )
-      if dot_graph and isinstance(dot_graph, graphviz.Digraph):
-        return GetEventGraphResult(dot_src=dot_graph.source)
-      else:
-        return {}
-
-    @app.websocket("/run_live")
-    async def agent_live_run(
-        websocket: WebSocket,
-        app_name: str,
-        user_id: str,
-        session_id: str,
-        modalities: List[Literal["TEXT", "AUDIO"]] = Query(
-            default=["TEXT", "AUDIO"]
-        ),  # Only allows "TEXT" or "AUDIO"
-    ) -> None:
-      await websocket.accept()
-
-      session = await self.session_service.get_session(
-          app_name=app_name, user_id=user_id, session_id=session_id
-      )
-      if not session:
-        # Accept first so that the client is aware of connection establishment,
-        # then close with a specific code.
-        await websocket.close(code=1002, reason="Session not found")
-        return
-
-      live_request_queue = LiveRequestQueue()
-
-      async def forward_events():
-        runner = await self.get_runner_async(app_name)
-        async for event in runner.run_live(
-            session=session, live_request_queue=live_request_queue
-        ):
-          await websocket.send_text(
-              event.model_dump_json(exclude_none=True, by_alias=True)
-          )
-
-      async def process_messages():
-        try:
-          while True:
-            data = await websocket.receive_text()
-            # Validate and send the received message to the live queue.
-            live_request_queue.send(LiveRequest.model_validate_json(data))
-        except ValidationError as ve:
-          logger.error("Validation error in process_messages: %s", ve)
-
-      # Run both tasks concurrently and cancel all if one fails.
-      tasks = [
-          asyncio.create_task(forward_events()),
-          asyncio.create_task(process_messages()),
+    @core_router.get("/debug/trace/session/{session_id}")
+    def get_session_trace(session_id: str) -> Any:
+      spans = memory_exporter.get_finished_spans(session_id)
+      if not spans:
+        return []
+      return [
+          {
+              "name": s.name,
+              "span_id": s.context.span_id,
+              "trace_id": s.context.trace_id,
+              "start_time": s.start_time,
+              "end_time": s.end_time,
+              "attributes": dict(s.attributes),
+              "parent_span_id": s.parent.span_id if s.parent else None,
+          }
+          for s in spans
       ]
-      done, pending = await asyncio.wait(
-          tasks, return_when=asyncio.FIRST_EXCEPTION
-      )
-      try:
-        # This will re-raise any exception from the completed tasks.
-        for task in done:
-          task.result()
-      except WebSocketDisconnect:
-        logger.info("Client disconnected during process_messages.")
-      except Exception as e:
-        logger.exception("Error during live websocket communication: %s", e)
-        traceback.print_exc()
-        WEBSOCKET_INTERNAL_ERROR_CODE = 1011
-        WEBSOCKET_MAX_BYTES_FOR_REASON = 123
-        await websocket.close(
-            code=WEBSOCKET_INTERNAL_ERROR_CODE,
-            reason=str(e)[:WEBSOCKET_MAX_BYTES_FOR_REASON],
-        )
-      finally:
-        for task in pending:
-          task.cancel()
+    
+    app.include_router(core_router)
+    
+    # 设置平台路由器
+    platform_router = setup_platform_router(self.platform_service)
+    app.include_router(platform_router)
+    
+    # 设置应用路由器
+    apps_router = setup_apps_router(
+        agent_loader=self.agent_loader,
+        session_service=self.session_service,
+        memory_service=self.memory_service,
+        artifact_service=self.artifact_service,
+        eval_sets_manager=self.eval_sets_manager,
+        eval_set_results_manager=self.eval_set_results_manager,
+        current_app_name_ref=self.current_app_name_ref,
+        runner_dict=self.runner_dict,
+        runners_to_clean=self.runners_to_clean,
+        agents_dir=self.agents_dir,
+        get_runner_async_func=self.get_runner_async,
+    )
+    app.include_router(apps_router)
 
     if web_assets_dir:
       import mimetypes
