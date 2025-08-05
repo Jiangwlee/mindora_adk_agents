@@ -1,0 +1,97 @@
+<!--
+Copyright 2025 Google LLC
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+
+<div class="sidebar-container">
+  <!-- Header -->
+  <div class="sidebar-header">
+    <h3 class="sidebar-title">对话历史</h3>
+    <button 
+      mat-icon-button 
+      class="new-chat-button"
+      (click)="onNewSession()"
+      matTooltip="新建对话">
+      <mat-icon>add</mat-icon>
+    </button>
+  </div>
+
+  <!-- Sessions List -->
+  <div class="sessions-container">
+    <!-- Loading State -->
+    <div *ngIf="isLoading" class="loading-container">
+      <div class="loading-spinner"></div>
+      <span>加载对话历史...</span>
+    </div>
+
+    <!-- Sessions List -->
+    <div *ngIf="!isLoading" class="sessions-list">
+      <div 
+        *ngFor="let session of sessions; trackBy: trackBySessionId"
+        class="session-item"
+        [class.active]="session.id === currentSessionId"
+        (click)="onSessionClick(session.id)">
+        
+        <div class="session-content">
+          <div class="session-header">
+            <h4 class="session-title">{{ session.title }}</h4>
+            <button 
+              mat-icon-button 
+              class="session-menu-button"
+              [matMenuTriggerFor]="sessionMenu"
+              (click)="$event.stopPropagation()"
+              tabindex="-1">
+              <mat-icon>more_vert</mat-icon>
+            </button>
+            
+            <mat-menu #sessionMenu="matMenu">
+              <button mat-menu-item (click)="onDeleteSession($event, session.id)">
+                <mat-icon>delete</mat-icon>
+                <span>删除对话</span>
+              </button>
+            </mat-menu>
+          </div>
+          
+          <p class="session-preview">{{ session.lastMessage }}</p>
+          
+          <div class="session-meta">
+            <span class="session-time">{{ formatTimestamp(session.timestamp) }}</span>
+            <span class="session-count">{{ session.messageCount }} 条消息</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Empty State -->
+      <div *ngIf="sessions.length === 0" class="empty-state">
+        <mat-icon class="empty-icon">chat</mat-icon>
+        <p>还没有对话历史</p>
+        <button mat-button color="primary" (click)="onNewSession()">
+          开始新对话
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="sidebar-footer">
+    <button 
+      mat-button 
+      class="refresh-button"
+      (click)="refreshSessions()"
+      matTooltip="刷新列表">
+      <mat-icon>refresh</mat-icon>
+      刷新
+    </button>
+  </div>
+</div>

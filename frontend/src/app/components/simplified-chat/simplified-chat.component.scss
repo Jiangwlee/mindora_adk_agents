@@ -1,0 +1,573 @@
+/**
+ * Copyright 2025 Google LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+.chat-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background-color: #1a1a1a;
+}
+
+// Chat Header
+.chat-header {
+  display: flex;  
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 24px;
+  border-bottom: 1px solid #333;
+  background-color: #1e1e1e;
+
+  .app-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+
+    .app-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background-color: #8ab4f8;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      
+      mat-icon {
+        color: #1a1a1a;
+        font-size: 20px;
+      }
+    }
+
+    .app-details {
+      .app-name {
+        color: #ffffff;
+        font-size: 16px;
+        font-weight: 500;
+        margin: 0 0 4px 0;
+      }
+
+      .app-description {
+        color: #9aa0a6;
+        font-size: 12px;
+        margin: 0;
+        line-height: 1.3;
+      }
+    }
+  }
+
+  .header-actions {
+    button {
+      color: #9aa0a6;
+    }
+  }
+}
+
+// Messages Container
+.messages-container {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.welcome-message {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding: 40px;
+
+  .welcome-content {
+    text-align: center;
+    color: #9aa0a6;
+
+    .welcome-icon {
+      font-size: 64px;
+      width: 64px;
+      height: 64px;
+      margin-bottom: 16px;
+      color: #5f6368;
+    }
+
+    h3 {
+      color: #ffffff;
+      font-size: 20px;
+      font-weight: 500;
+      margin: 0 0 8px 0;
+    }
+
+    p {
+      font-size: 14px;
+      line-height: 1.4;
+      margin: 0;
+      max-width: 400px;
+    }
+  }
+}
+
+.messages-list {
+  padding: 16px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+// Message Wrapper
+.message-wrapper {
+  display: flex;
+  width: 100%;
+  
+  &.user-message {
+    justify-content: flex-end;
+  }
+  
+  &.bot-message {
+    justify-content: flex-start;
+  }
+}
+
+.message-content {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  max-width: 70%;
+  
+  &.user-content {
+    flex-direction: row-reverse;
+  }
+  
+  &.bot-content {
+    flex-direction: row;
+  }
+}
+
+// Message Avatar
+.message-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  
+  mat-icon {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+  }
+  
+  &.user-avatar {
+    background-color: #004a77;
+    color: #ffffff;
+  }
+  
+  &.bot-avatar {
+    background-color: #8ab4f8;
+    color: #1a1a1a;
+  }
+}
+
+// Message Bubble
+.message-bubble {
+  padding: 12px 16px;
+  border-radius: 18px;
+  word-wrap: break-word;
+  position: relative;
+  
+  &.user-bubble {
+    background-color: #8ab4f8;
+    color: #1a1a1a;
+  }
+  
+  &.bot-bubble {
+    background-color: #303030;
+    color: #ffffff;
+  }
+}
+
+.message-text {
+  font-size: 14px;
+  line-height: 1.4;
+  white-space: pre-wrap;
+  
+  .thought-indicator {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    color: #8ab4f8;
+    margin-bottom: 8px;
+    opacity: 0.8;
+    
+    mat-icon {
+      font-size: 14px;
+      width: 14px;
+      height: 14px;
+    }
+  }
+  
+  .thought-text {
+    font-style: italic;
+    opacity: 0.9;
+  }
+}
+
+// Loading Animation
+.loading-message {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  
+  .typing-indicator {
+    display: flex;
+    gap: 4px;
+    
+    span {
+      width: 6px;
+      height: 6px;
+      background-color: #8ab4f8;
+      border-radius: 50%;
+      animation: typing 1.4s infinite;
+      
+      &:nth-child(2) {
+        animation-delay: 0.2s;
+      }
+      
+      &:nth-child(3) {
+        animation-delay: 0.4s;
+      }
+    }
+  }
+  
+  .loading-text {
+    font-size: 12px;
+    color: #9aa0a6;
+  }
+}
+
+@keyframes typing {
+  0%, 60%, 100% {
+    transform: scale(1);
+    opacity: 0.5;
+  }
+  30% {
+    transform: scale(1.2);
+    opacity: 1;
+  }
+}
+
+// Function Call/Response
+.function-call, .function-response {
+  margin: 8px 0;
+  
+  .function-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    font-weight: 500;
+    margin-bottom: 8px;
+    color: #8ab4f8;
+    
+    mat-icon {
+      font-size: 14px;
+      width: 14px;
+      height: 14px;
+    }
+  }
+  
+  .function-args, .function-result {
+    background-color: #1a1a1a;
+    padding: 8px 12px;
+    border-radius: 8px;
+    border-left: 3px solid #8ab4f8;
+    
+    pre {
+      font-size: 11px;
+      font-family: 'Monaco', 'Consolas', monospace;
+      margin: 0;
+      white-space: pre-wrap;
+      word-break: break-word;
+      color: #e8eaed;
+    }
+  }
+}
+
+// Inline Data
+.inline-data {
+  margin: 8px 0;
+  
+  .inline-image {
+    .generated-image {
+      max-width: 100%;
+      max-height: 300px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: transform 0.2s ease;
+      
+      &:hover {
+        transform: scale(1.02);
+      }
+    }
+  }
+  
+  .inline-audio {
+    margin: 8px 0;
+    
+    .audio-player {
+      width: 100%;
+      max-width: 300px;
+      height: 40px;
+      
+      &::-webkit-media-controls-panel {
+        background-color: #333;
+      }
+      
+      &::-webkit-media-controls-play-button,
+      &::-webkit-media-controls-mute-button {
+        background-color: #8ab4f8;
+        border-radius: 50%;
+      }
+    }
+  }
+  
+  .file-link {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    background-color: rgba(138, 180, 248, 0.1);
+    border-radius: 8px;
+    border: 1px solid rgba(138, 180, 248, 0.3);
+    
+    mat-icon {
+      color: #8ab4f8;
+      font-size: 16px;
+    }
+    
+    .link-button {
+      background: none;
+      border: none;
+      color: #8ab4f8;
+      text-decoration: underline;
+      cursor: pointer;
+      font-size: 12px;
+      padding: 0;
+      
+      &:hover {
+        color: #aecbfa;
+      }
+    }
+  }
+}
+
+// Message Attachments
+.message-attachments {
+  margin-top: 8px;
+  
+  .attachment-item {
+    .attachment-image {
+      max-width: 200px;
+      max-height: 150px;
+      border-radius: 8px;
+      object-fit: cover;
+    }
+    
+    .attachment-file {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px;
+      background-color: rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+      font-size: 12px;
+      
+      mat-icon {
+        font-size: 16px;
+      }
+    }
+  }
+}
+
+// Input Container
+.input-container {
+  border-top: 1px solid #333;
+  background-color: #1e1e1e;
+  padding: 16px 24px;
+}
+
+.file-preview {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+  
+  .preview-item {
+    position: relative;
+  }
+  
+  .image-preview-item {
+    position: relative;
+    
+    .preview-image {
+      width: 60px;
+      height: 60px;
+      object-fit: cover;
+      border-radius: 8px;
+    }
+    
+    .remove-button {
+      position: absolute;
+      top: -8px;
+      right: -8px;
+      background-color: #f44336;
+      color: white;
+      width: 20px;
+      height: 20px;
+      
+      mat-icon {
+        font-size: 12px;
+        line-height: 20px;
+      }
+    }
+  }
+  
+  .file-preview-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    background-color: #333;
+    border-radius: 8px;
+    
+    .file-info {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      color: #e8eaed;
+    }
+    
+    .remove-button {
+      color: #f44336;
+      width: 24px;
+      height: 24px;
+      
+      mat-icon {
+        font-size: 16px;
+      }
+    }
+  }
+}
+
+.input-field-container {
+  .message-input {
+    width: 100%;
+    
+    .mat-mdc-text-field-wrapper {
+      background-color: #333;
+      border-radius: 24px;
+      border: 1px solid #444;
+      
+      &:hover {
+        border-color: #666;
+      }
+      
+      &.mdc-text-field--focused {
+        border-color: #8ab4f8;
+      }
+    }
+    
+    .input-textarea {
+      color: #ffffff;
+      padding: 12px 16px;
+      border: none;
+      background: transparent;
+      resize: none;
+      
+      &::placeholder {
+        color: #9aa0a6;
+      }
+    }
+    
+    .input-actions {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding-right: 8px;
+      
+      button {
+        color: #9aa0a6;
+        
+        &:not([disabled]) {
+          &:hover {
+            color: #8ab4f8;
+          }
+        }
+        
+        &[color="primary"]:not([disabled]) {
+          color: #8ab4f8;
+          
+          &:hover {
+            background-color: rgba(138, 180, 248, 0.1);
+          }
+        }
+      }
+    }
+  }
+}
+
+// Scrollbar Styling
+.messages-container::-webkit-scrollbar {
+  width: 6px;
+}
+
+.messages-container::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.messages-container::-webkit-scrollbar-thumb {
+  background-color: #333;
+  border-radius: 3px;
+  
+  &:hover {
+    background-color: #444;
+  }
+}
+
+// Responsive Design
+@media (max-width: 768px) {
+  .message-content {
+    max-width: 85%;
+  }
+  
+  .messages-list {
+    padding: 16px;
+  }
+  
+  .input-container {
+    padding: 12px 16px;
+  }
+  
+  .chat-header {
+    padding: 12px 16px;
+    
+    .app-info .app-details .app-name {
+      font-size: 14px;
+    }
+  }
+}

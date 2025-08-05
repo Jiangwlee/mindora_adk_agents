@@ -1,0 +1,248 @@
+<!--
+Copyright 2025 Google LLC
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+
+<div class="chat-container">
+  <!-- Chat Header -->
+  <div class="chat-header">
+    <div class="app-info">
+      <div class="app-avatar">
+        <mat-icon>smart_toy</mat-icon>
+      </div>
+      <div class="app-details">
+        <h3 class="app-name">{{ appDisplayName || appName }}</h3>
+        <p class="app-description">{{ appDescription }}</p>
+      </div>
+    </div>
+    <div class="header-actions">
+      <button mat-icon-button matTooltip="更多选项" [matMenuTriggerFor]="headerMenu">
+        <mat-icon>more_vert</mat-icon>
+      </button>
+      <mat-menu #headerMenu="matMenu">
+        <button mat-menu-item>
+          <mat-icon>refresh</mat-icon>
+          <span>刷新对话</span>
+        </button>
+        <button mat-menu-item>
+          <mat-icon>download</mat-icon>
+          <span>导出对话</span>
+        </button>
+      </mat-menu>
+    </div>
+  </div>
+
+  <!-- Messages Area -->
+  <div #autoScroll class="messages-container">
+    <!-- Welcome Message -->
+    <div *ngIf="messages.length === 0" class="welcome-message">
+      <div class="welcome-content">
+        <mat-icon class="welcome-icon">chat</mat-icon>
+        <h3>开始对话</h3>
+        <p>{{ appDescription || '我是您的AI助手，有什么可以帮助您的吗？' }}</p>
+      </div>
+    </div>
+
+    <!-- Messages -->
+    <div class="messages-list">
+      <div 
+        *ngFor="let message of messages; trackBy: trackBySessionId; let i = index"
+        class="message-wrapper"
+        [ngClass]="{
+          'user-message': message.role === 'user',
+          'bot-message': message.role === 'bot'
+        }">
+        
+        <!-- User Message -->
+        <div *ngIf="message.role === 'user'" class="message-content user-content">
+          <div class="message-bubble user-bubble">
+            <!-- Text Content -->
+            <div *ngIf="message.text" class="message-text">
+              {{ message.text }}
+            </div>
+            
+            <!-- Attachments -->
+            <div *ngIf="message.attachments" class="message-attachments">
+              <div *ngFor="let attachment of message.attachments" class="attachment-item">
+                <img *ngIf="attachment.file.type.startsWith('image/')" 
+                     [src]="attachment.url" 
+                     alt="attachment" 
+                     class="attachment-image" />
+                <div *ngIf="!attachment.file.type.startsWith('image/')" class="attachment-file">
+                  <mat-icon>insert_drive_file</mat-icon>
+                  <span>{{ attachment.file.name }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="message-avatar user-avatar">
+            <mat-icon>person</mat-icon>
+          </div>
+        </div>
+
+        <!-- Bot Message -->
+        <div *ngIf="message.role === 'bot'" class="message-content bot-content">
+          <div class="message-avatar bot-avatar">
+            <mat-icon>smart_toy</mat-icon>
+          </div>
+          <div class="message-bubble bot-bubble">
+            <!-- Loading State -->
+            <div *ngIf="message.isLoading" class="loading-message">
+              <div class="typing-indicator">
+                <span></span>
+                <span></span>
+                <span></span>
+              </div>
+              <span class="loading-text">正在思考...</span>
+            </div>
+
+            <!-- Text Content -->
+            <div *ngIf="message.text && !message.isLoading" class="message-text">
+              <div *ngIf="message.thought" class="thought-indicator">
+                <mat-icon>psychology</mat-icon>
+                <span>思考中</span>
+              </div>
+              <div class="text-content" [ngClass]="{'thought-text': message.thought}">
+                {{ message.text }}
+              </div>
+            </div>
+
+            <!-- Function Call -->
+            <div *ngIf="message.functionCall" class="function-call">
+              <div class="function-header">
+                <mat-icon>functions</mat-icon>
+                <span>调用工具：{{ message.functionCall.name }}</span>
+              </div>
+              <div class="function-args">
+                <pre>{{ message.functionCall.args | json }}</pre>
+              </div>
+            </div>
+
+            <!-- Function Response -->
+            <div *ngIf="message.functionResponse" class="function-response">
+              <div class="function-header">
+                <mat-icon>check_circle</mat-icon>
+                <span>工具响应：{{ message.functionResponse.name }}</span>
+              </div>
+              <div class="function-result">
+                <pre>{{ message.functionResponse.response | json }}</pre>
+              </div>
+            </div>
+
+            <!-- Inline Data (Images, Files, etc.) -->
+            <div *ngIf="message.inlineData" class="inline-data">
+              <div [ngSwitch]="message.inlineData.mediaType">
+                <!-- Image -->
+                <div *ngSwitchCase="MediaType.IMAGE" class="inline-image">
+                  <img [src]="message.inlineData.data" 
+                       [alt]="message.inlineData.displayName"
+                       class="generated-image" />
+                </div>
+                
+                <!-- Audio -->
+                <div *ngSwitchCase="MediaType.AUDIO" class="inline-audio">
+                  <audio controls class="audio-player">
+                    <source [src]="message.inlineData.data" type="audio/mpeg">
+                    <source [src]="message.inlineData.data" type="audio/wav">
+                    您的浏览器不支持音频播放
+                  </audio>
+                </div>
+                
+                <!-- Text/HTML -->
+                <div *ngSwitchCase="MediaType.TEXT" class="inline-text">
+                  <div class="file-link">
+                    <mat-icon>description</mat-icon>
+                    <button class="link-button" 
+                            (click)="openBase64InNewTab(message.inlineData.data, message.inlineData.mimeType)">
+                      {{ message.inlineData.displayName }}
+                    </button>
+                  </div>
+                </div>
+                
+                <!-- Other Files -->
+                <div *ngSwitchDefault class="inline-file">
+                  <div class="file-link">
+                    <mat-icon>attach_file</mat-icon>
+                    <button class="link-button" 
+                            (click)="openBase64InNewTab(message.inlineData.data, message.inlineData.mimeType)">
+                      {{ message.inlineData.displayName }}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Input Area -->
+  <div class="input-container">
+    <!-- File Preview -->
+    <div *ngIf="selectedFiles.length > 0" class="file-preview">
+      <div *ngFor="let file of selectedFiles; let i = index" class="preview-item">
+        <div *ngIf="file.file.type.startsWith('image/')" class="image-preview-item">
+          <img [src]="file.url" alt="preview" class="preview-image" />
+          <button mat-icon-button class="remove-button" (click)="removeFile(i)">
+            <mat-icon>close</mat-icon>
+          </button>
+        </div>
+        <div *ngIf="!file.file.type.startsWith('image/')" class="file-preview-item">
+          <div class="file-info">
+            <mat-icon>insert_drive_file</mat-icon>
+            <span>{{ file.file.name }}</span>
+          </div>
+          <button mat-icon-button class="remove-button" (click)="removeFile(i)">
+            <mat-icon>close</mat-icon>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Input Field -->
+    <div class="input-field-container">
+      <input type="file" multiple hidden (change)="onFileSelect($event)" #fileInput />
+      
+      <mat-form-field class="message-input" appearance="outline">
+        <textarea 
+          matInput
+          cdkTextareaAutosize
+          cdkAutosizeMinRows="1"
+          cdkAutosizeMaxRows="8"
+          [(ngModel)]="userInput"
+          (keydown.enter)="sendMessage($event)"
+          placeholder="输入消息..."
+          class="input-textarea"></textarea>
+        
+        <div matSuffix class="input-actions">
+          <button mat-icon-button 
+                  type="button"
+                  (click)="fileInput.click()" 
+                  matTooltip="上传文件">
+            <mat-icon>attach_file</mat-icon>
+          </button>
+          <button mat-icon-button 
+                  type="button"
+                  (click)="sendMessage()"
+                  [disabled]="!userInput.trim() && selectedFiles.length === 0"
+                  matTooltip="发送消息"
+                  color="primary">
+            <mat-icon>send</mat-icon>
+          </button>
+        </div>
+      </mat-form-field>
+    </div>
+  </div>
+</div>

@@ -1,4 +1,4 @@
-/*
+/**
  * Copyright 2025 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,64 +15,60 @@
  */
 
 .chatbot-container {
-  min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   display: flex;
   flex-direction: column;
+  height: 100vh;
+  background-color: #1a1a1a;
+  color: #ffffff;
 }
 
+// Top Toolbar
 .app-toolbar {
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-  position: sticky;
-  top: 0;
-  z-index: 1000;
+  background-color: #1e1e1e;
+  border-bottom: 1px solid #333;
+  position: relative;
+  z-index: 10;
+
+  .sidebar-toggle {
+    margin-left: 8px;
+  }
+
+  .toolbar-spacer {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+
+    .app-title {
+      font-size: 18px;
+      font-weight: 500;
+      margin: 0;
+      color: #ffffff;
+    }
+  }
+
+  button {
+    color: #9aa0a6;
+
+    &:hover {
+      color: #ffffff;
+      background-color: rgba(255, 255, 255, 0.1);
+    }
+  }
 }
 
-.toolbar-content {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex: 1;
-  margin-left: 16px;
-}
-
-.app-info {
-  flex: 1;
-}
-
-.app-title {
-  font-size: 1.5rem;
-  font-weight: 600;
-  margin: 0 0 4px 0;
-  line-height: 1.2;
-}
-
-.app-description {
-  font-size: 0.9rem;
-  opacity: 0.9;
-  margin: 0;
-  line-height: 1.4;
-}
-
-.toolbar-actions {
-  display: flex;
-  gap: 8px;
-}
-
+// Loading and Error States
 .loading-container {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  flex: 1;
-  color: white;
-  padding: 40px;
-}
+  height: calc(100vh - 64px);
+  color: #9aa0a6;
 
-.loading-container p {
-  margin-top: 16px;
-  font-size: 1.1rem;
-  text-align: center;
+  p {
+    margin-top: 16px;
+    font-size: 16px;
+  }
 }
 
 .error-container {
@@ -80,283 +76,144 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  flex: 1;
-  color: white;
+  height: calc(100vh - 64px);
+  color: #9aa0a6;
   text-align: center;
-  padding: 40px;
+
+  .error-icon {
+    font-size: 64px;
+    width: 64px;
+    height: 64px;
+    color: #f44336;
+    margin-bottom: 16px;
+  }
+
+  h3 {
+    color: #ffffff;
+    font-size: 20px;
+    margin: 0 0 8px 0;
+  }
+
+  p {
+    font-size: 14px;
+    margin: 0 0 24px 0;
+    max-width: 400px;
+  }
 }
 
-.error-icon {
-  font-size: 4rem;
-  color: #f44336;
-  margin-bottom: 16px;
-}
-
-.error-container h3 {
-  font-size: 1.8rem;
-  margin: 0 0 8px 0;
-}
-
-.error-container p {
-  font-size: 1.1rem;
-  margin: 0 0 24px 0;
-  opacity: 0.9;
-}
-
-.main-content {
-  flex: 1;
+// Main Layout
+.main-layout {
   display: flex;
-  flex-direction: column;
-  gap: 24px;
-  padding: 24px;
-}
-
-.app-header {
-  margin-bottom: 8px;
-}
-
-.info-card {
-  background: rgba(255, 255, 255, 0.95);
-  border-radius: 16px;
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  height: calc(100vh - 64px);
   overflow: hidden;
 }
 
-.info-content {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 24px;
-  padding: 24px;
+.sidebar-container {
+  width: 300px;
+  min-width: 280px;
+  max-width: 400px;
+  height: 100%;
+  transition: all 0.3s ease-in-out;
+  overflow: hidden;
+
+  &.sidebar-hidden {
+    width: 0;
+    min-width: 0;
+    max-width: 0;
+    transform: translateX(-100%);
+  }
 }
 
-.info-section h3 {
-  font-size: 1.2rem;
-  font-weight: 600;
-  color: #333;
-  margin: 0 0 16px 0;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.info-item {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 12px;
-  color: #555;
-}
-
-.info-item mat-icon {
-  color: #667eea;
-  font-size: 1.2rem;
-}
-
-.features-list {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.feature-item {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  color: #555;
-}
-
-.feature-enabled {
-  color: #4caf50;
-  font-size: 1.2rem;
-}
-
-.capabilities {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.capability-tag {
-  background: rgba(102, 126, 234, 0.1);
-  color: #667eea;
-  padding: 6px 12px;
-  border-radius: 16px;
-  font-size: 0.85rem;
-  border: 1px solid rgba(102, 126, 234, 0.2);
-}
-
-.chat-placeholder {
+.chat-area {  
   flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 24px 0;
-}
+  height: 100%;
+  min-width: 0;
+  transition: all 0.3s ease-in-out;
 
-.placeholder-card {
-  background: rgba(255, 255, 255, 0.95);
-  border-radius: 16px;
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  max-width: 600px;
-  width: 100%;
-  text-align: center;
-}
-
-.placeholder-content {
-  padding: 40px;
-}
-
-.chat-icon {
-  font-size: 4rem;
-  color: #667eea;
-  margin-bottom: 24px;
-}
-
-.placeholder-content h3 {
-  font-size: 1.8rem;
-  font-weight: 600;
-  color: #333;
-  margin: 0 0 12px 0;
-}
-
-.placeholder-content p {
-  font-size: 1.1rem;
-  color: #666;
-  margin: 0 0 24px 0;
-  line-height: 1.6;
-}
-
-.placeholder-description {
-  font-size: 0.95rem;
-  color: #777;
-  margin-bottom: 32px !important;
-}
-
-.placeholder-features {
-  display: flex;
-  justify-content: center;
-  gap: 32px;
-  flex-wrap: wrap;
-}
-
-.placeholder-feature {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-  color: #555;
-}
-
-.placeholder-feature mat-icon {
-  font-size: 2rem;
-  color: #667eea;
-}
-
-.status-bar {
-  background: rgba(0, 0, 0, 0.1);
-  padding: 16px 24px;
-  display: flex;
-  justify-content: center;
-  gap: 32px;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.status-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  color: rgba(255, 255, 255, 0.8);
-  font-size: 0.9rem;
-}
-
-.status-icon {
-  font-size: 1.1rem;
+  &.chat-area-full {
+    width: 100%;
+  }
 }
 
 // Responsive Design
+@media (max-width: 1024px) {
+  .sidebar-container {
+    width: 280px;
+    min-width: 260px;
+  }
+}
+
 @media (max-width: 768px) {
-  .toolbar-content {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 12px;
-    margin-left: 8px;
+  .app-toolbar {
+    .app-title {
+      font-size: 16px;
+    }
   }
 
-  .app-title {
-    font-size: 1.3rem;
+  .sidebar-container {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 280px;
+    z-index: 20;
+    background-color: #1e1e1e;
+    box-shadow: 2px 0 8px rgba(0, 0, 0, 0.3);
+
+    &.sidebar-hidden {
+      transform: translateX(-100%);
+      box-shadow: none;
+    }
   }
 
-  .app-description {
-    font-size: 0.85rem;
-  }
-
-  .main-content {
-    padding: 16px;
-    gap: 16px;
-  }
-
-  .info-content {
-    grid-template-columns: 1fr;
-    gap: 16px;
-    padding: 16px;
-  }
-
-  .placeholder-content {
-    padding: 24px;
-  }
-
-  .chat-icon {
-    font-size: 3rem;
-  }
-
-  .placeholder-content h3 {
-    font-size: 1.5rem;
-  }
-
-  .placeholder-features {
-    gap: 24px;
-  }
-
-  .status-bar {
-    flex-direction: column;
-    gap: 12px;
-    align-items: center;
+  .chat-area {
+    width: 100%;
   }
 }
 
 @media (max-width: 480px) {
   .app-toolbar {
-    padding: 8px;
+    padding: 0 8px;
+
+    .app-title {
+      font-size: 14px;
+    }
   }
 
-  .toolbar-content {
-    margin-left: 4px;
+  .sidebar-container {
+    width: 260px;
   }
 
-  .app-title {
-    font-size: 1.1rem;
+  .loading-container p,
+  .error-container p {
+    padding: 0 16px;
+  }
+}
+
+// Material Design Overrides
+:host ::ng-deep {
+  .mat-toolbar {
+    padding: 0 16px;
   }
 
-  .app-description {
-    font-size: 0.8rem;
+  .mat-toolbar-row,
+  .mat-toolbar-single-row {
+    height: 64px;
   }
 
-  .main-content {
-    padding: 12px;
+  .mat-mdc-raised-button {
+    --mdc-protected-button-container-color: #8ab4f8;
+    --mdc-protected-button-label-text-color: #1a1a1a;
   }
 
-  .info-content {
-    padding: 12px;
+  .mat-mdc-icon-button {
+    --mdc-icon-button-state-layer-size: 40px;
+    --mdc-icon-button-icon-size: 20px;
   }
+}
 
-  .placeholder-content {
-    padding: 16px;
-  }
-
-  .placeholder-features {
-    flex-direction: column;
-    gap: 16px;
-  }
+// Animation for sidebar toggle
+.sidebar-container,
+.chat-area {
+  will-change: transform, width;
 }

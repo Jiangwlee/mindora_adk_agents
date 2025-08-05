@@ -15,22 +15,27 @@ limitations under the License.
 -->
 
 <div class="chatbot-container">
-  <!-- Toolbar -->
-  <mat-toolbar class="app-toolbar" color="primary">
-    <button mat-icon-button (click)="goBack()">
+  <!-- Top Toolbar -->
+  <mat-toolbar class="app-toolbar">
+    <button mat-icon-button (click)="goBack()" matTooltip="返回主页">
       <mat-icon>arrow_back</mat-icon>
     </button>
-    <div class="toolbar-content">
-      <div class="app-info">
-        <h2 class="app-title">{{ appDisplayName || appName }}</h2>
-        <p class="app-description">{{ appDescription }}</p>
-      </div>
-      <div class="toolbar-actions">
-        <button mat-icon-button (click)="goToHome()" matTooltip="返回主页">
-          <mat-icon>home</mat-icon>
-        </button>
-      </div>
+    
+    <button 
+      mat-icon-button 
+      (click)="toggleSidebar()" 
+      matTooltip="切换侧边栏"
+      class="sidebar-toggle">
+      <mat-icon>{{ sidebarVisible ? 'menu_open' : 'menu' }}</mat-icon>
+    </button>
+    
+    <div class="toolbar-spacer">
+      <h1 class="app-title">{{ appDisplayName || appName }}</h1>
     </div>
+    
+    <button mat-icon-button (click)="goToHome()" matTooltip="返回主页">
+      <mat-icon>home</mat-icon>
+    </button>
   </mat-toolbar>
 
   <!-- Loading State -->
@@ -49,96 +54,30 @@ limitations under the License.
     </button>
   </div>
 
-  <!-- Main Content -->
-  <div *ngIf="!isLoading && !error" class="main-content">
-    <!-- App Header -->
-    <div class="app-header">
-      <mat-card class="info-card">
-        <div class="info-content">
-          <div class="info-section">
-            <h3>应用信息</h3>
-            <div class="info-item">
-              <mat-icon>apps</mat-icon>
-              <span>类型: Chatbot</span>
-            </div>
-            <div class="info-item">
-              <mat-icon>category</mat-icon>
-              <span>布局: 聊天界面</span>
-            </div>
-            <div class="info-item">
-              <mat-icon>palette</mat-icon>
-              <span>主题: 现代风格</span>
-            </div>
-          </div>
-
-          <div class="info-section">
-            <h3>功能特性</h3>
-            <div class="features-list">
-              <div class="feature-item" *ngIf="hasFeature('voice')">
-                <mat-icon class="feature-enabled">mic</mat-icon>
-                <span>{{ getFeatureLabel('voice') }}</span>
-              </div>
-              <div class="feature-item" *ngIf="hasFeature('file_upload')">
-                <mat-icon class="feature-enabled">upload_file</mat-icon>
-                <span>{{ getFeatureLabel('file_upload') }}</span>
-              </div>
-              <div class="feature-item" *ngIf="hasFeature('code_execution')">
-                <mat-icon class="feature-enabled">code</mat-icon>
-                <span>{{ getFeatureLabel('code_execution') }}</span>
-              </div>
-            </div>
-          </div>
-
-          <div class="info-section">
-            <h3>能力范围</h3>
-            <div class="capabilities">
-              <span class="capability-tag" *ngFor="let capability of appData?.capabilities">
-                {{ capability }}
-              </span>
-            </div>
-          </div>
-        </div>
-      </mat-card>
+  <!-- Main Content Layout -->
+  <div *ngIf="!isLoading && !error" class="main-layout">
+    <!-- Sidebar -->
+    <div class="sidebar-container" [class.sidebar-hidden]="!sidebarVisible">
+      <app-chat-history-sidebar
+        [appName]="appName"
+        [userId]="userId"
+        [currentSessionId]="currentSessionId"
+        (sessionSelected)="onSessionSelected($event)"
+        (newSessionRequested)="onNewSessionRequested()"
+        (sessionDeleted)="onSessionDeleted($event)">
+      </app-chat-history-sidebar>
     </div>
 
-    <!-- Chat Interface Placeholder -->
-    <div class="chat-placeholder">
-      <mat-card class="placeholder-card">
-        <div class="placeholder-content">
-          <mat-icon class="chat-icon">chat</mat-icon>
-          <h3>聊天界面</h3>
-          <p>这里是 {{ appDisplayName }} 的聊天界面</p>
-          <p class="placeholder-description">
-            聊天功能正在开发中，将提供统一的对话体验，支持多模态交互（文本、音频、视频、文件）。
-          </p>
-          <div class="placeholder-features">
-            <div class="placeholder-feature">
-              <mat-icon>text_format</mat-icon>
-              <span>文本对话</span>
-            </div>
-            <div class="placeholder-feature">
-              <mat-icon>mic</mat-icon>
-              <span>语音交互</span>
-            </div>
-            <div class="placeholder-feature">
-              <mat-icon>attach_file</mat-icon>
-              <span>文件上传</span>
-            </div>
-          </div>
-        </div>
-      </mat-card>
-    </div>
-
-    <!-- Status Bar -->
-    <div class="status-bar">
-      <div class="status-item">
-        <mat-icon class="status-icon">info</mat-icon>
-        <span>应用名称: {{ appName }}</span>
-      </div>
-      <div class="status-item">
-        <mat-icon class="status-icon">build</mat-icon>
-        <span>状态: 开发中</span>
-      </div>
+    <!-- Chat Area -->
+    <div class="chat-area" [class.chat-area-full]="!sidebarVisible">
+      <app-simplified-chat
+        [appName]="appName"
+        [sessionId]="currentSessionId"
+        [userId]="userId"
+        [appDisplayName]="appDisplayName"
+        [appDescription]="appDescription"
+        (messageCountChanged)="onMessageCountChanged($event)">
+      </app-simplified-chat>
     </div>
   </div>
 </div>
