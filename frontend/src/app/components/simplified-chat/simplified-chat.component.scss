@@ -18,7 +18,7 @@
   display: flex;
   flex-direction: column;
   height: 100%;
-  background-color: #1a1a1a;
+  background-color: #ffffff;
 }
 
 // Chat Header
@@ -26,9 +26,9 @@
   display: flex;  
   align-items: center;
   justify-content: space-between;
-  padding: 16px 24px;
-  border-bottom: 1px solid #333;
-  background-color: #1e1e1e;
+  padding: 24px 36px;
+  border-bottom: 1px solid #e1e8ed;
+  background-color: #ffffff;
 
   .app-info {
     display: flex;
@@ -36,31 +36,31 @@
     gap: 12px;
 
     .app-avatar {
-      width: 40px;
-      height: 40px;
+      width: 64px;
+      height: 64px;
       border-radius: 50%;
-      background-color: #8ab4f8;
+      background-color: #10a37f;
       display: flex;
       align-items: center;
       justify-content: center;
       
       mat-icon {
-        color: #1a1a1a;
-        font-size: 20px;
+        color: #ffffff;
+        font-size: 32px;
       }
     }
 
     .app-details {
       .app-name {
-        color: #ffffff;
-        font-size: 16px;
+        color: #1a1a1a;
+        font-size: 26px;
         font-weight: 500;
         margin: 0 0 4px 0;
       }
 
       .app-description {
-        color: #9aa0a6;
-        font-size: 12px;
+        color: #6b7280;
+        font-size: 19px;
         margin: 0;
         line-height: 1.3;
       }
@@ -69,7 +69,32 @@
 
   .header-actions {
     button {
-      color: #9aa0a6;
+      color: #6b7280;
+    }
+
+    .pending-events-button {
+      position: relative;
+      color: #ffc107 !important;
+
+      .event-count {
+        position: absolute;
+        top: -8px;
+        right: -8px;
+        background-color: #f44336;
+        color: white;
+        border-radius: 50%;
+        width: 18px;
+        height: 18px;
+        font-size: 19px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+      }
+
+      &:hover {
+        background-color: rgba(255, 193, 7, 0.1);
+      }
     }
   }
 }
@@ -92,28 +117,28 @@
 
   .welcome-content {
     text-align: center;
-    color: #9aa0a6;
+    color: #6b7280;
 
     .welcome-icon {
       font-size: 64px;
       width: 64px;
       height: 64px;
       margin-bottom: 16px;
-      color: #5f6368;
+      color: #10a37f;
     }
 
     h3 {
-      color: #ffffff;
-      font-size: 20px;
+      color: #1a1a1a;
+      font-size: 26px;
       font-weight: 500;
       margin: 0 0 8px 0;
     }
 
     p {
-      font-size: 14px;
+      font-size: 22px;
       line-height: 1.4;
       margin: 0;
-      max-width: 400px;
+      max-width: 640px;
     }
   }
 }
@@ -156,8 +181,8 @@
 
 // Message Avatar
 .message-avatar {
-  width: 32px;
-  height: 32px;
+  width: 48px;
+  height: 48px;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -165,56 +190,57 @@
   flex-shrink: 0;
   
   mat-icon {
-    font-size: 16px;
-    width: 16px;
-    height: 16px;
+    font-size: 24px;
+    width: 24px;
+    height: 24px;
   }
   
   &.user-avatar {
-    background-color: #004a77;
+    background-color: #1a1a1a;
     color: #ffffff;
   }
   
   &.bot-avatar {
-    background-color: #8ab4f8;
-    color: #1a1a1a;
+    background-color: #10a37f;
+    color: #ffffff;
   }
 }
 
 // Message Bubble
 .message-bubble {
-  padding: 12px 16px;
-  border-radius: 18px;
+  padding: 16px 20px;
+  border-radius: 20px;
   word-wrap: break-word;
   position: relative;
   
   &.user-bubble {
-    background-color: #8ab4f8;
-    color: #1a1a1a;
+    background-color: #1a1a1a;
+    color: #ffffff;
   }
   
   &.bot-bubble {
-    background-color: #303030;
-    color: #ffffff;
+    background-color: #f7f7f8;
+    color: #1a1a1a;
+    border: 1px solid #e1e8ed;
   }
 }
 
 .message-text {
-  font-size: 14px;
-  line-height: 1.4;
+  font-size: 19px;
+  line-height: 1.5;
   white-space: pre-wrap;
   
   .thought-indicator {
     display: flex;
     align-items: center;
     gap: 4px;
-    font-size: 11px;
-    color: #8ab4f8;
+    font-size: 22px;
+    color: #10a37f;
     margin-bottom: 8px;
     opacity: 0.8;
     
     mat-icon {
-      font-size: 14px;
+      font-size: 28px;
       width: 14px;
       height: 14px;
     }
@@ -239,7 +265,7 @@
     span {
       width: 6px;
       height: 6px;
-      background-color: #8ab4f8;
+      background-color: #10a37f;
       border-radius: 50%;
       animation: typing 1.4s infinite;
       
@@ -254,8 +280,8 @@
   }
   
   .loading-text {
-    font-size: 12px;
-    color: #9aa0a6;
+    font-size: 19px;
+    color: #6b7280;
   }
 }
 
@@ -278,13 +304,13 @@
     display: flex;
     align-items: center;
     gap: 6px;
-    font-size: 12px;
+    font-size: 19px;
     font-weight: 500;
     margin-bottom: 8px;
     color: #8ab4f8;
     
     mat-icon {
-      font-size: 14px;
+      font-size: 28px;
       width: 14px;
       height: 14px;
     }
@@ -297,7 +323,7 @@
     border-left: 3px solid #8ab4f8;
     
     pre {
-      font-size: 11px;
+      font-size: 22px;
       font-family: 'Monaco', 'Consolas', monospace;
       margin: 0;
       white-space: pre-wrap;
@@ -356,7 +382,7 @@
     
     mat-icon {
       color: #8ab4f8;
-      font-size: 16px;
+      font-size: 26px;
     }
     
     .link-button {
@@ -365,7 +391,7 @@
       color: #8ab4f8;
       text-decoration: underline;
       cursor: pointer;
-      font-size: 12px;
+      font-size: 19px;
       padding: 0;
       
       &:hover {
@@ -394,20 +420,269 @@
       padding: 8px;
       background-color: rgba(255, 255, 255, 0.1);
       border-radius: 8px;
-      font-size: 12px;
+      font-size: 19px;
       
       mat-icon {
-        font-size: 16px;
+        font-size: 26px;
       }
+    }
+  }
+}
+
+// Inline Data Styles
+.inline-data {
+  margin-top: 8px;
+
+  .inline-image {
+    position: relative;
+    display: inline-block;
+
+    .generated-image {
+      max-width: 100%;
+      max-height: 400px;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+      
+      &.clickable-image {
+        cursor: pointer;
+        transition: opacity 0.2s ease;
+
+        &:hover {
+          opacity: 0.9;
+        }
+      }
+    }
+
+    .image-actions {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      background-color: rgba(0, 0, 0, 0.7);
+      border-radius: 20px;
+      opacity: 0;
+      transition: opacity 0.2s ease;
+
+      button {
+        color: white;
+        width: 32px;
+        height: 32px;
+        
+        mat-icon {
+          font-size: 29px;
+        }
+      }
+    }
+
+    &:hover .image-actions {
+      opacity: 1;
+    }
+  }
+
+  .inline-audio {
+    .audio-player {
+      width: 100%;
+      max-width: 300px;
+      margin-top: 8px;
+    }
+  }
+
+  .inline-text,
+  .inline-file {
+    .file-link {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px;
+      background-color: #333;
+      border-radius: 8px;
+      margin-top: 8px;
+
+      mat-icon {
+        color: #8ab4f8;
+        font-size: 20px;
+      }
+
+      .link-button {
+        background: none;
+        border: none;
+        color: #8ab4f8;
+        cursor: pointer;
+        font-size: 28px;
+        text-decoration: underline;
+
+        &:hover {
+          color: #aecbfa;
+        }
+      }
+    }
+  }
+}
+
+// Function Call Button Styles (ADK Debug style)
+.function-call-container,
+.function-response-container {
+  margin-top: 8px;
+
+  .function-event-button {
+    background-color: white;
+    color: #333;
+    margin: 2px;
+    border: 1px solid #ddd;
+    font-size: 19px;
+    font-weight: 500;
+    padding: 8px 16px;
+    border-radius: 20px;
+    transition: all 0.2s ease;
+    
+    mat-icon {
+      margin-right: 6px;
+      font-size: 19px;
+      width: 16px;
+      height: 16px;
+    }
+
+    &:hover {
+      background-color: #f5f5f5;
+      border-color: #8ab4f8;
+      color: #8ab4f8;
+    }
+  }
+
+  .function-details {
+    margin-top: 8px;
+    border-radius: 8px;
+    overflow: hidden;
+    border-left: 3px solid #8ab4f8;
+    background-color: #2a2a2a;
+
+    .function-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      background-color: #333;
+      border-bottom: 1px solid #444;
+      font-size: 19px;
+      font-weight: 500;
+      color: #8ab4f8;
+
+      mat-icon {
+        font-size: 26px;
+      }
+    }
+
+    .function-args,
+    .function-result {
+      padding: 12px;
+      background-color: #1a1a1a;
+
+      pre {
+        margin: 0;
+        white-space: pre-wrap;
+        font-family: 'Roboto Mono', monospace;
+        font-size: 11px;
+        color: #e8eaed;
+        line-height: 1.4;
+      }
+    }
+  }
+}
+
+// Different colors for call vs response
+.function-call-container {
+  .function-event-button {
+    mat-icon {
+      color: #ff9800;
+    }
+  }
+  
+  .function-details .function-header {
+    color: #ffc107;
+    
+    mat-icon {
+      color: #ffc107;
+    }
+  }
+}
+
+.function-response-container {
+  .function-event-button {
+    mat-icon {
+      color: #4caf50;
+    }
+  }
+  
+  .function-details .function-header {
+    color: #4caf50;
+    
+    mat-icon {
+      color: #4caf50;
+    }
+  }
+}
+
+// Legacy Function Call Styles (keep for backward compatibility)
+.function-call,
+.function-response {
+  margin-top: 8px;
+  border-radius: 8px;
+  overflow: hidden;
+
+  .function-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    background-color: #333;
+    border-bottom: 1px solid #444;
+    font-size: 28px;
+    font-weight: 500;
+
+    mat-icon {
+      font-size: 29px;
+    }
+  }
+
+  .function-args,
+  .function-result {
+    padding: 12px;
+    background-color: #2a2a2a;
+
+    pre {
+      margin: 0;
+      white-space: pre-wrap;
+      font-family: 'Roboto Mono', monospace;
+      font-size: 26px;
+      color: #e8eaed;
+    }
+  }
+}
+
+.function-call {
+  .function-header {
+    color: #ffc107;
+    
+    mat-icon {
+      color: #ffc107;
+    }
+  }
+}
+
+.function-response {
+  .function-header {
+    color: #4caf50;
+    
+    mat-icon {
+      color: #4caf50;
     }
   }
 }
 
 // Input Container
 .input-container {
-  border-top: 1px solid #333;
-  background-color: #1e1e1e;
-  padding: 16px 24px;
+  border-top: 1px solid #e1e8ed;
+  background-color: #ffffff;
+  padding: 24px 36px;
 }
 
 .file-preview {
@@ -440,7 +715,7 @@
       height: 20px;
       
       mat-icon {
-        font-size: 12px;
+        font-size: 19px;
         line-height: 20px;
       }
     }
@@ -458,7 +733,7 @@
       display: flex;
       align-items: center;
       gap: 6px;
-      font-size: 12px;
+      font-size: 19px;
       color: #e8eaed;
     }
     
@@ -468,7 +743,7 @@
       height: 24px;
       
       mat-icon {
-        font-size: 16px;
+        font-size: 26px;
       }
     }
   }
@@ -479,51 +754,86 @@
     width: 100%;
     
     .mat-mdc-text-field-wrapper {
-      background-color: #333;
-      border-radius: 24px;
-      border: 1px solid #444;
+      background-color: #f7f7f8;
+      border-radius: 12px;
+      border: 1px solid #d1d9e0;
+      min-height: auto;
       
       &:hover {
-        border-color: #666;
+        border-color: #10a37f;
       }
       
       &.mdc-text-field--focused {
-        border-color: #8ab4f8;
+        border-color: #10a37f;
       }
     }
     
     .input-textarea {
-      color: #ffffff;
-      padding: 12px 16px;
+      color: #1a1a1a;
+      padding: 16px 20px;
       border: none;
       background: transparent;
       resize: none;
+      line-height: 1.5;
+      min-height: 38px;
+      max-height: 320px;
+      overflow-y: auto;
+      font-size: 19px;
+      
+      // 自定义滚动条样式
+      &::-webkit-scrollbar {
+        width: 4px;
+      }
+      
+      &::-webkit-scrollbar-track {
+        background: transparent;
+        border-radius: 2px;
+      }
+      
+      &::-webkit-scrollbar-thumb {
+        background-color: rgba(0, 0, 0, 0.2);
+        border-radius: 2px;
+        
+        &:hover {
+          background-color: rgba(0, 0, 0, 0.3);
+        }
+      }
+      
+      // 隐藏resize handle
+      &::-webkit-resizer {
+        display: none;
+      }
+      
+      // 平滑滚动
+      scroll-behavior: smooth;
       
       &::placeholder {
-        color: #9aa0a6;
+        color: #6b7280;
+        font-size: 19px;
       }
     }
     
     .input-actions {
       display: flex;
-      align-items: center;
+      align-items: flex-end;
       gap: 4px;
-      padding-right: 8px;
+      padding-right: 12px;
+      padding-bottom: 8px;
       
       button {
-        color: #9aa0a6;
+        color: #6b7280;
         
         &:not([disabled]) {
           &:hover {
-            color: #8ab4f8;
+            color: #10a37f;
           }
         }
         
         &[color="primary"]:not([disabled]) {
-          color: #8ab4f8;
+          color: #10a37f;
           
           &:hover {
-            background-color: rgba(138, 180, 248, 0.1);
+            background-color: rgba(16, 163, 127, 0.1);
           }
         }
       }
@@ -541,11 +851,11 @@
 }
 
 .messages-container::-webkit-scrollbar-thumb {
-  background-color: #333;
+  background-color: #d1d9e0;
   border-radius: 3px;
   
   &:hover {
-    background-color: #444;
+    background-color: #a8b8c5;
   }
 }
 
@@ -567,7 +877,32 @@
     padding: 12px 16px;
     
     .app-info .app-details .app-name {
-      font-size: 14px;
+      font-size: 28px;
+    }
+  }
+}
+
+// 修复输入框样式
+:host ::ng-deep {
+  .message-input {
+    .mat-mdc-form-field-subscript-wrapper {
+      display: none;  // 隐藏下标区域，避免提示词被遮挡
+    }
+    
+    .mat-mdc-text-field-wrapper {
+      padding-left: 0;
+      padding-right: 0;
+    }
+    
+    .mat-mdc-form-field-infix {
+      border-top: none;
+      padding: 12px 0;
+      min-height: auto;
+      align-items: flex-start;
+    }
+    
+    .mat-mdc-form-field-outline {
+      display: none;  // 隐藏默认边框，使用自定义边框
     }
   }
 }

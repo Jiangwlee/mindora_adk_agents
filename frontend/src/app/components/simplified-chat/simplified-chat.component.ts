@@ -33,23 +33,18 @@ import {AgentService} from '../../core/services/agent.service';
 import {SessionService} from '../../core/services/session.service';
 import {AgentRunRequest} from '../../core/models/AgentRunRequest';
 import {getMediaTypeFromMimetype, MediaType, openBase64InNewTab} from '../artifact-tab/artifact-tab.component';
+import {MessageProcessingService, ChatMessage} from '../../core/services/message-processing.service';
+import {FileProcessingService, FileWithUrl} from '../../core/services/file-processing.service';
+import {ArtifactService} from '../../core/services/artifact.service';
+import {DownloadService} from '../../core/services/download.service';
+import {MatDialog} from '@angular/material/dialog';
+import {ViewImageDialogComponent} from '../view-image-dialog/view-image-dialog.component';
+import {OAuthHandlingService} from '../../core/services/oauth-handling.service';
+import {LongRunningEventsService, LongRunningEvent} from '../../core/services/long-running-events.service';
+import {PendingEventDialogComponent} from '../pending-event-dialog/pending-event-dialog.component';
+import {ErrorHandlingService} from '../../core/services/error-handling.service';
 
-export interface ChatMessage {
-  role: 'user' | 'bot';
-  text?: string;
-  isLoading?: boolean;
-  attachments?: {file: File; url: string}[];
-  inlineData?: {
-    displayName: string;
-    data: string;
-    mimeType: string;
-    mediaType?: MediaType;
-  };
-  functionCall?: any;
-  functionResponse?: any;
-  thought?: boolean;
-  timestamp?: Date;
-}
+// ChatMessage interface is now imported from MessageProcessingService
 
 @Component({
   selector: 'app-simplified-chat',
@@ -86,26 +81,37 @@ export class SimplifiedChatComponent implements OnInit {
 
   messages: ChatMessage[] = [];
   userInput: string = '';
-  selectedFiles: {file: File; url: string}[] = [];
+  selectedFiles: FileWithUrl[] = [];
   isLoading = false;
+  artifacts: any[] = [];
+  longRunningEvents: LongRunningEvent[] = [];
+  functionCallEventId = '';
   
   private streamingTextMessage: ChatMessage | null = null;
   private readonly messagesSubject = new BehaviorSubject<ChatMessage[]>([]);
   private readonly scrollInterruptedSubject = new BehaviorSubject(true);
   private readonly isModelThinkingSubject = new BehaviorSubject(false);
   
-  private readonly snackBar = inject(MatSnackBar);
   private readonly changeDetectorRef = inject(ChangeDetectorRef);
 
   constructor(
     private agentService: AgentService,
     private sessionService: SessionService,
-    private destroyRef: DestroyRef
+    private destroyRef: DestroyRef,
+    private messageProcessingService: MessageProcessingService,
+    private fileProcessingService: FileProcessingService,
+    private artifactService: ArtifactService,
+    private downloadService: DownloadService,
+    private dialog: MatDialog,
+    private oauthHandlingService: OAuthHandlingService,
+    private longRunningEventsService: LongRunningEventsService,
+    private errorHandlingService: ErrorHandlingService
   ) {}
 
   ngOnInit(): void {
     this.setupMessageHandling();
     this.loadSessionMessages();
+    this.setupLongRunningEventsHandling();
   }
 
   private setupMessageHandling(): void {
@@ -141,6 +147,15 @@ export class SimplifiedChatComponent implements OnInit {
     });
   }
 
+  private setupLongRunningEventsHandling(): void {
+    this.longRunningEventsService.getLongRunningEvents()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(events => {
+        this.longRunningEvents = events;
+        this.changeDetectorRef.detectChanges();
+      });
+  }
+
   private loadSessionMessages(): void {
     if (!this.sessionId || !this.appName || !this.userId) return;
 
@@ -149,75 +164,21 @@ export class SimplifiedChatComponent implements OnInit {
       .subscribe({
         next: (session) => {
           if (session?.events) {
-            this.messages = this.transformSessionEvents(session.events);
+            this.messages = this.messageProcessingService.transformSessionEvents(session.events);
             this.messagesSubject.next(this.messages);
             this.messageCountChanged.emit(this.messages.length);
           }
         },
         error: (err) => {
-          console.error('Error loading session messages:', err);
+          this.errorHandlingService.handleSessionError(err, {
+            operation: 'Load Session Messages',
+            userMessage: '加载历史消息失败'
+          });
         }
       });
   }
 
-  private transformSessionEvents(events: any[]): ChatMessage[] {
-    const messages: ChatMessage[] = [];
-    
-    events.forEach(event => {
-      if (event.content?.parts) {
-        // Group parts by type to avoid duplicating text messages
-        const textParts: any[] = [];
-        const otherParts: any[] = [];
-        
-        event.content.parts.forEach((part: any) => {
-          if (part.text) {
-            textParts.push(part);
-          } else {
-            otherParts.push(part);
-          }
-        });
-        
-        // Combine all text parts into a single message
-        if (textParts.length > 0) {
-          const combinedText = textParts.map(part => part.text).join('');
-          const isThought = textParts.some(part => part.thought);
-          
-          const textMessage: ChatMessage = {
-            role: event.author === 'user' ? 'user' : 'bot',
-            text: combinedText,
-            thought: isThought,
-            timestamp: new Date(event.timestamp || Date.now())
-          };
-          messages.push(textMessage);
-        }
-        
-        // Handle other parts separately
-        otherParts.forEach((part: any) => {
-          const message: ChatMessage = {
-            role: event.author === 'user' ? 'user' : 'bot',
-            timestamp: new Date(event.timestamp || Date.now())
-          };
-
-          if (part.functionCall) {
-            message.functionCall = part.functionCall;
-          } else if (part.functionResponse) {
-            message.functionResponse = part.functionResponse;
-          } else if (part.inlineData) {
-            message.inlineData = {
-              displayName: part.inlineData.displayName,
-              data: this.formatBase64Data(part.inlineData.data, part.inlineData.mimeType),
-              mimeType: part.inlineData.mimeType,
-              mediaType: getMediaTypeFromMimetype(part.inlineData.mimeType)
-            };
-          }
-
-          messages.push(message);
-        });
-      }
-    });
-
-    return messages;
-  }
+  // transformSessionEvents method is now handled by MessageProcessingService
 
   async sendMessage(event?: Event): Promise<void> {
     if (event instanceof KeyboardEvent) {
@@ -273,7 +234,7 @@ export class SimplifiedChatComponent implements OnInit {
       sessionId: this.sessionId,
       newMessage: {
         role: 'user',
-        parts: await this.getUserMessageParts()
+        parts: await this.fileProcessingService.getUserMessageParts(this.userInput, this.selectedFiles)
       },
       streaming: true
     };
@@ -289,8 +250,10 @@ export class SimplifiedChatComponent implements OnInit {
           await this.processStreamChunk(chunk);
         },
         error: (err) => {
-          console.error('SSE error:', err);
-          this.snackBar.open('发送消息失败，请重试', '确定');
+          this.errorHandlingService.handleStreamError(err, {
+            operation: 'Send Message',
+            userMessage: '发送消息失败，请重试'
+          });
         },
         complete: () => {
           this.streamingTextMessage = null;
@@ -305,7 +268,10 @@ export class SimplifiedChatComponent implements OnInit {
 
   private async processStreamChunk(chunk: string): Promise<void> {
     if (chunk.startsWith('{"error"')) {
-      this.snackBar.open(chunk, '确定');
+      this.errorHandlingService.handleStreamError(chunk, {
+        operation: 'Process Stream Chunk',
+        userMessage: '流式响应错误'
+      });
       return;
     }
 
@@ -313,7 +279,10 @@ export class SimplifiedChatComponent implements OnInit {
       const chunkJson = JSON.parse(chunk);
       
       if (chunkJson.error) {
-        this.snackBar.open(chunkJson.error, '确定');
+        this.errorHandlingService.handleStreamError(chunkJson.error, {
+          operation: 'Process Stream Chunk',
+          userMessage: '服务器返回错误'
+        });
         return;
       }
 
@@ -323,78 +292,51 @@ export class SimplifiedChatComponent implements OnInit {
         }
       }
 
+      // Handle artifact actions
+      if (chunkJson.actions?.artifactDelta) {
+        for (const key in chunkJson.actions.artifactDelta) {
+          if (chunkJson.actions.artifactDelta.hasOwnProperty(key)) {
+            this.renderArtifact(key, chunkJson.actions.artifactDelta[key]);
+          }
+        }
+      }
+
+      // Handle long running tool IDs
+      if (chunkJson.longRunningToolIds && chunkJson.longRunningToolIds.length > 0) {
+        const events = this.longRunningEventsService.extractAsyncFunctionsFromParts(
+          chunkJson.longRunningToolIds, 
+          chunkJson.content.parts
+        );
+        this.longRunningEventsService.addLongRunningEvents(events);
+        this.functionCallEventId = chunkJson.id;
+
+        // Handle OAuth automatically if detected
+        const oauthEvent = this.longRunningEventsService.getFirstPendingOAuthEvent();
+        if (oauthEvent) {
+          this.handleOAuthFlow(oauthEvent);
+        }
+      }
+
       this.changeDetectorRef.detectChanges();
     } catch (error) {
-      console.error('Error parsing stream chunk:', error);
+      this.errorHandlingService.handleStreamError(error, {
+        operation: 'Parse Stream Chunk',
+        userMessage: '解析流式响应失败'
+      });
     }
   }
 
   private processPart(part: any, chunkJson: any): void {
-    if (part.text) {
-      this.isModelThinkingSubject.next(false);
-      
-      if (part.thought) {
-        // Handle thought messages separately
-        const thoughtMessage: ChatMessage = {
-          role: 'bot',
-          text: part.text,
-          thought: true,
-          timestamp: new Date()
-        };
-        this.insertMessageBeforeLoadingMessage(thoughtMessage);
-      } else if (chunkJson.partial === true) {
-        // Handle partial streaming messages - update existing or create new
-        if (!this.streamingTextMessage) {
-          this.streamingTextMessage = {
-            role: 'bot',
-            text: part.text,
-            timestamp: new Date()
-          };
-          this.insertMessageBeforeLoadingMessage(this.streamingTextMessage);
-        } else {
-          // For partial messages, append incrementally
-          this.streamingTextMessage.text = (this.streamingTextMessage.text || '') + part.text;
-        }
-      } else {
-        // Handle final/complete messages - replace streaming message with final
-        if (this.streamingTextMessage) {
-          this.streamingTextMessage.text = part.text;
-        } else {
-          const finalMessage: ChatMessage = {
-            role: 'bot',
-            text: part.text,
-            timestamp: new Date()
-          };
-          this.insertMessageBeforeLoadingMessage(finalMessage);
-        }
-      }
-    } else if (part.functionCall) {
-      const functionMessage: ChatMessage = {
-        role: 'bot',
-        functionCall: part.functionCall,
-        timestamp: new Date()
-      };
-      this.insertMessageBeforeLoadingMessage(functionMessage);
-    } else if (part.functionResponse) {
-      const functionResponseMessage: ChatMessage = {
-        role: 'bot',
-        functionResponse: part.functionResponse,
-        timestamp: new Date()
-      };
-      this.insertMessageBeforeLoadingMessage(functionResponseMessage);
-    } else if (part.inlineData) {
-      const inlineDataMessage: ChatMessage = {
-        role: 'bot',
-        inlineData: {
-          displayName: part.inlineData.displayName,
-          data: this.formatBase64Data(part.inlineData.data, part.inlineData.mimeType),
-          mimeType: part.inlineData.mimeType,
-          mediaType: getMediaTypeFromMimetype(part.inlineData.mimeType)
-        },
-        timestamp: new Date()
-      };
-      this.insertMessageBeforeLoadingMessage(inlineDataMessage);
-    }
+    const result = this.messageProcessingService.processPart(
+      part, 
+      chunkJson, 
+      this.streamingTextMessage,
+      this.messages,
+      (message: ChatMessage) => this.insertMessageBeforeLoadingMessage(message)
+    );
+    
+    this.streamingTextMessage = result.streamingTextMessage;
+    // latestThought and isModelThinking can be used if needed for UI updates
   }
 
   private insertMessageBeforeLoadingMessage(message: ChatMessage): void {
@@ -407,59 +349,18 @@ export class SimplifiedChatComponent implements OnInit {
     this.messagesSubject.next(this.messages);
   }
 
-  private async getUserMessageParts(): Promise<any[]> {
-    const parts: any[] = [];
+  // getUserMessageParts method is now handled by FileProcessingService
 
-    if (this.userInput.trim()) {
-      parts.push({text: this.userInput});
-    }
+  // readFileAsBytes method is now handled by FileProcessingService
 
-    if (this.selectedFiles.length > 0) {
-      for (const file of this.selectedFiles) {
-        parts.push({
-          inlineData: {
-            displayName: file.file.name,
-            data: await this.readFileAsBytes(file.file),
-            mimeType: file.file.type
-          }
-        });
-      }
-    }
-
-    return parts;
-  }
-
-  private readFileAsBytes(file: File): Promise<string> {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = (e: any) => {
-        const base64Data = e.target.result.split(',')[1];
-        resolve(base64Data);
-      };
-      reader.onerror = reject;
-      reader.readAsDataURL(file);
-    });
-  }
-
-  private formatBase64Data(data: string, mimeType: string): string {
-    return `data:${mimeType};base64,${data}`;
-  }
+  // formatBase64Data method is now handled by FileProcessingService
 
   onFileSelect(event: Event): void {
-    const input = event.target as HTMLInputElement;
-    if (input.files) {
-      for (let i = 0; i < input.files.length; i++) {
-        const file = input.files[i];
-        const url = URL.createObjectURL(file);
-        this.selectedFiles.push({file, url});
-      }
-    }
-    input.value = '';
+    this.selectedFiles = this.fileProcessingService.handleFileSelection(event, this.selectedFiles);
   }
 
   removeFile(index: number): void {
-    URL.revokeObjectURL(this.selectedFiles[index].url);
-    this.selectedFiles.splice(index, 1);
+    this.selectedFiles = this.fileProcessingService.removeFile(this.selectedFiles, index);
   }
 
   private scrollToBottom(): void {
@@ -473,4 +374,180 @@ export class SimplifiedChatComponent implements OnInit {
 
   // Add missing method from template
   trackBySessionId = (index: number, item: any) => item.id;
+
+  /**
+   * 渲染制品
+   * 从ChatComponent.renderArtifact()方法抽取的逻辑
+   */
+  private renderArtifact(artifactId: string, versionId: string): void {
+    // Add a placeholder message for the artifact
+    // Feed the placeholder with the artifact data after it's fetched
+    let message: ChatMessage = {
+      role: 'bot',
+      inlineData: {
+        displayName: 'Loading artifact...',
+        data: '',
+        mimeType: 'image/png',
+      },
+      timestamp: new Date()
+    };
+    this.insertMessageBeforeLoadingMessage(message);
+
+    const currentIndex = this.messages.length - 2;
+
+    this.artifactService
+      .getArtifactVersion(
+        this.userId,
+        this.appName,
+        this.sessionId,
+        artifactId,
+        versionId,
+      )
+      .subscribe((res) => {
+        const mimeType = res.inlineData.mimeType;
+        const base64Data = this.fileProcessingService.formatBase64Data(res.inlineData.data, mimeType);
+        const mediaType = getMediaTypeFromMimetype(mimeType);
+
+        let inlineData = {
+          displayName: this.fileProcessingService.createDefaultArtifactName(mimeType),
+          data: base64Data,
+          mimeType: mimeType,
+          mediaType,
+        };
+
+        this.messages[currentIndex] = {
+          role: 'bot',
+          inlineData,
+          timestamp: new Date()
+        };
+
+        // To trigger ngOnChanges in the artifact tab component
+        this.artifacts = [
+          ...this.artifacts,
+          {
+            id: artifactId,
+            data: base64Data,
+            mimeType,
+            versionId,
+            mediaType: getMediaTypeFromMimetype(mimeType),
+          },
+        ];
+
+        this.changeDetectorRef.detectChanges();
+      }, (error) => {
+        this.errorHandlingService.handleArtifactError(error, {
+          operation: 'Render Artifact',
+          userMessage: '加载制品失败'
+        });
+      });
+  }
+
+  /**
+   * 下载制品
+   */
+  downloadArtifact(artifact: any): void {
+    this.downloadService.downloadBase64Data(
+      artifact.data,
+      artifact.mimeType,
+      artifact.id,
+    );
+  }
+
+  /**
+   * 打开图片查看对话框
+   */
+  openViewImageDialog(imageData: string | null): void {
+    const dialogRef = this.dialog.open(ViewImageDialogComponent, {
+      maxWidth: '90vw',
+      maxHeight: '90vh',
+      data: {
+        imageData,
+      },
+    });
+  }
+
+  /**
+   * 处理OAuth流程
+   */
+  private handleOAuthFlow(oauthEvent: LongRunningEvent): void {
+    this.longRunningEventsService.updateEventStatus(oauthEvent.id, 'running');
+    
+    this.oauthHandlingService.handleLongRunningToolOAuth(
+      [oauthEvent],
+      this.appName,
+      this.userId,
+      this.sessionId,
+      this.functionCallEventId,
+      (responses) => {
+        this.longRunningEventsService.removeFinishedEvents([oauthEvent]);
+        this.processOAuthResponse(responses);
+      },
+      (error) => {
+        this.longRunningEventsService.updateEventStatus(oauthEvent.id, 'failed');
+        this.errorHandlingService.handleOAuthError(error, {
+          operation: 'Handle OAuth Flow',
+          userMessage: 'OAuth认证失败，请重试'
+        });
+      }
+    );
+  }
+
+  /**
+   * 处理OAuth响应
+   */
+  private processOAuthResponse(responses: any[]): void {
+    let index = this.messages.length - 1;
+    for (const e of responses) {
+      if (e.content) {
+        for (let part of e.content.parts) {
+          index += 1;
+          this.processPart(part, e);
+        }
+      }
+    }
+    this.changeDetectorRef.detectChanges();
+  }
+
+  /**
+   * 打开长时间运行事件对话框
+   */
+  openLongRunningEventDialog(): void {
+    if (this.longRunningEvents.length === 0) return;
+
+    const dialogRef = this.dialog.open(PendingEventDialogComponent, {
+      width: '600px',
+      data: {
+        event: this.longRunningEvents[0],
+        appName: this.appName,
+        userId: this.userId,
+        sessionId: this.sessionId,
+        functionCallEventId: this.functionCallEventId,
+      },
+    });
+
+    dialogRef.afterClosed().subscribe((result) => {
+      if (result) {
+        this.longRunningEventsService.removeFinishedEvents(result.events);
+        this.processOAuthResponse(result.response);
+      }
+    });
+  }
+
+  /**
+   * 检查是否有待处理的长时间运行事件
+   */
+  hasPendingLongRunningEvents(): boolean {
+    return this.longRunningEvents.length > 0;
+  }
+
+  /**
+   * 切换工具调用详情的展开/折叠状态
+   */
+  toggleFunctionDetails(message: ChatMessage, type: 'call' | 'response'): void {
+    if (type === 'call') {
+      message.showCallDetails = !message.showCallDetails;
+    } else {
+      message.showResponseDetails = !message.showResponseDetails;
+    }
+  }
 }

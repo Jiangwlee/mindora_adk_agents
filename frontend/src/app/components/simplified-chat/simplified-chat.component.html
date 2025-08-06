@@ -27,6 +27,16 @@ limitations under the License.
       </div>
     </div>
     <div class="header-actions">
+      <!-- Long Running Events Indicator -->
+      <button *ngIf="hasPendingLongRunningEvents()" 
+              mat-icon-button 
+              matTooltip="有待处理的任务"
+              (click)="openLongRunningEventDialog()"
+              class="pending-events-button">
+        <mat-icon>hourglass_top</mat-icon>
+        <span class="event-count">{{ longRunningEvents.length }}</span>
+      </button>
+
       <button mat-icon-button matTooltip="更多选项" [matMenuTriggerFor]="headerMenu">
         <mat-icon>more_vert</mat-icon>
       </button>
@@ -38,6 +48,12 @@ limitations under the License.
         <button mat-menu-item>
           <mat-icon>download</mat-icon>
           <span>导出对话</span>
+        </button>
+        <button *ngIf="hasPendingLongRunningEvents()" 
+                mat-menu-item 
+                (click)="openLongRunningEventDialog()">
+          <mat-icon>hourglass_top</mat-icon>
+          <span>查看待处理任务 ({{ longRunningEvents.length }})</span>
         </button>
       </mat-menu>
     </div>
@@ -119,24 +135,42 @@ limitations under the License.
             </div>
 
             <!-- Function Call -->
-            <div *ngIf="message.functionCall" class="function-call">
-              <div class="function-header">
-                <mat-icon>functions</mat-icon>
-                <span>调用工具：{{ message.functionCall.name }}</span>
-              </div>
-              <div class="function-args">
-                <pre>{{ message.functionCall.args | json }}</pre>
+            <div *ngIf="message.functionCall" class="function-call-container">
+              <button 
+                mat-stroked-button
+                class="function-event-button"
+                (click)="toggleFunctionDetails(message, 'call')">
+                <mat-icon>bolt</mat-icon>
+                {{ message.functionCall.name }}
+              </button>
+              <div *ngIf="message.showCallDetails" class="function-details">
+                <div class="function-header">
+                  <mat-icon>functions</mat-icon>
+                  <span>调用工具：{{ message.functionCall.name }}</span>
+                </div>
+                <div class="function-args">
+                  <pre>{{ message.functionCall.args | json }}</pre>
+                </div>
               </div>
             </div>
 
             <!-- Function Response -->
-            <div *ngIf="message.functionResponse" class="function-response">
-              <div class="function-header">
-                <mat-icon>check_circle</mat-icon>
-                <span>工具响应：{{ message.functionResponse.name }}</span>
-              </div>
-              <div class="function-result">
-                <pre>{{ message.functionResponse.response | json }}</pre>
+            <div *ngIf="message.functionResponse" class="function-response-container">
+              <button 
+                mat-stroked-button
+                class="function-event-button"
+                (click)="toggleFunctionDetails(message, 'response')">
+                <mat-icon>check</mat-icon>
+                {{ message.functionResponse.name }}
+              </button>
+              <div *ngIf="message.showResponseDetails" class="function-details">
+                <div class="function-header">
+                  <mat-icon>check_circle</mat-icon>
+                  <span>工具响应：{{ message.functionResponse.name }}</span>
+                </div>
+                <div class="function-result">
+                  <pre>{{ message.functionResponse.response | json }}</pre>
+                </div>
               </div>
             </div>
 
@@ -147,7 +181,15 @@ limitations under the License.
                 <div *ngSwitchCase="MediaType.IMAGE" class="inline-image">
                   <img [src]="message.inlineData.data" 
                        [alt]="message.inlineData.displayName"
-                       class="generated-image" />
+                       class="generated-image clickable-image"
+                       (click)="openViewImageDialog(message.inlineData.data)" />
+                  <div class="image-actions">
+                    <button mat-icon-button 
+                            matTooltip="在新标签页中打开"
+                            (click)="openBase64InNewTab(message.inlineData.data, message.inlineData.mimeType)">
+                      <mat-icon>open_in_new</mat-icon>
+                    </button>
+                  </div>
                 </div>
                 
                 <!-- Audio -->
@@ -219,8 +261,8 @@ limitations under the License.
         <textarea 
           matInput
           cdkTextareaAutosize
-          cdkAutosizeMinRows="1"
-          cdkAutosizeMaxRows="8"
+          cdkAutosizeMinRows="2"
+          cdkAutosizeMaxRows="12"
           [(ngModel)]="userInput"
           (keydown.enter)="sendMessage($event)"
           placeholder="输入消息..."

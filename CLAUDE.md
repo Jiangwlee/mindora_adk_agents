@@ -69,6 +69,21 @@ mindora_adk_agents/
 └── justfile               # 开发任务定义
 ```
 
+### Frontend Development Guide
+
+#### 核心开发原则
+1. **基于 ADK Web**: 本项目的前端是基于[Google ADK Web](https://github.com/google/adk-web/)做的二次开发
+2. **参考文档优先**: 开发前端功能时，首先参考 docs/web-feature-development-guide.md
+3. **增量式开发**: 开发新功能时，采用增量式开发。**必须**保持 docs/web-feature-development-guide.md 中提及的 google adk-web 核心文件不变，不得随意修改 adk-web 文件
+4. **最大化复用**: **优先复用 adk-web 现有组件和服务**，避免重复实现相同功能
+
+#### 组件复用策略
+- **服务层复用**: 优先使用 `AgentService`、`SessionService`、`ArtifactService` 等现有服务
+- **功能模块复用**: 复用 SSE 处理、文件上传、OAuth 认证、制品展示等核心逻辑  
+- **UI 组件复用**: 复用 `ArtifactTabComponent`、`ViewImageDialogComponent`、`PendingEventDialogComponent` 等组件
+- **工具函数复用**: 复用 `getMediaTypeFromMimetype`、`openBase64InNewTab` 等工具函数
+- **创建共享服务**: 当需要在多个组件间共享逻辑时，抽取为独立的服务层 
+
 ### 开发命令
 
 #### 环境安装
