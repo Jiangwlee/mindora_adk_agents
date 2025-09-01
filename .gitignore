@@ -300,7 +300,6 @@ frontend/.angular
 *.h5
 *.tflite
 *.onnx
-models/
 checkpoints/
 
 # Data files
