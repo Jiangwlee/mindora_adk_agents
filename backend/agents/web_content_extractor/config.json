@@ -1,0 +1,90 @@
+{
+  "name": "智能网页信息整理",
+  "description": "智能网页内容提取和整理系统，支持多种输入格式的URL提取和网页内容抓取",
+  "app_type": "custom",
+  "capabilities": [
+    "URL提取",
+    "网页内容抓取", 
+    "文档处理",
+    "并行处理",
+    "结构化输出",
+    "实时进度反馈"
+  ],
+  "supported_inputs": [
+    "自然语言文本",
+    "Word文档(.docx)",
+    "Excel文档(.xlsx)",
+    "URL列表"
+  ],
+  "ui_config": {
+    "theme": "modern",
+    "layout": "custom",
+    "features": [
+      "file_upload",
+      "progress_tracking",
+      "json_output",
+      "batch_processing"
+    ],
+    "display_options": {
+      "show_progress": true,
+      "show_statistics": true,
+      "show_errors": true,
+      "auto_scroll": true
+    }
+  },
+  "processing_config": {
+    "max_concurrent_urls": 10,
+    "timeout_seconds": 30,
+    "max_file_size_mb": 5,
+    "supported_file_types": [".docx", ".doc", ".xlsx", ".xls"],
+    "default_model": "gemini-2.0-flash-exp"
+  },
+  "output_format": {
+    "type": "structured_json",
+    "include_statistics": true,
+    "include_errors": true,
+    "include_metadata": true
+  },
+  "examples": [
+    {
+      "title": "提取文本中的链接",
+      "input": "请帮我提取以下内容中的网页链接：访问我们的官网 https://example.com 了解更多信息，也可以查看 www.github.com/project 的项目页面。",
+      "description": "从自然语言文本中智能提取URL并获取网页内容"
+    },
+    {
+      "title": "处理Word文档",
+      "input": "上传包含多个链接的Word文档",
+      "description": "解析Word文档内容，提取其中的URL并批量抓取网页信息"
+    },
+    {
+      "title": "批量处理Excel中的链接",
+      "input": "上传包含URL列表的Excel表格",
+      "description": "从Excel表格中提取URL，并行处理所有链接获取内容"
+    }
+  ],
+  "use_cases": [
+    "学术研究：从文献中提取并整理参考链接内容",
+    "商业分析：批量获取竞品网站信息进行分析",
+    "内容聚合：从多个来源收集和整理网页内容",
+    "链接验证：检查文档中链接的有效性和内容质量",
+    "信息采集：从招标网站等批量提取结构化信息"
+  ],
+  "technical_specs": {
+    "agent_framework": "Google ADK 1.9.0+",
+    "content_extraction": "crawl4ai (模拟)",
+    "document_processing": "pandas + pypandoc (计划)",
+    "parallel_processing": true,
+    "streaming_output": true,
+    "session_support": true
+  },
+  "created_at": "2025-08-07T00:00:00.000000",
+  "version": "1.0.0",
+  "author": "Claude Code",
+  "tags": [
+    "网页抓取",
+    "内容提取", 
+    "文档处理",
+    "批量处理",
+    "数据采集"
+  ]
+}

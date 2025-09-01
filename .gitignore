@@ -305,12 +305,6 @@ checkpoints/
 # Data files
 data/
 datasets/
-*.csv
-*.json
-*.jsonl
-*.parquet
-*.pkl
-*.pickle
 
 # Experiment tracking
 wandb/

@@ -1,0 +1,21 @@
+{
+  "name": "数据分析师",
+  "description": "专业的数据分析助手，可以处理和分析各种数据",
+  "app_type": "custom",
+  "capabilities": [
+    "数据分析",
+    "图表生成",
+    "统计计算",
+    "报告生成"
+  ],
+  "ui_config": {
+    "theme": "modern",
+    "layout": "dashboard",
+    "features": ["file_upload", "chart_generation", "data_export"],
+    "colors": {
+      "primary": "#1976d2",
+      "secondary": "#424242"
+    }
+  },
+  "created_at": "2025-08-05T10:00:00.000000"
+}
