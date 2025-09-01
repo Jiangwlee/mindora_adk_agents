@@ -236,9 +236,11 @@ def format_final_output(extraction_data: Dict[str, Any]) -> Dict[str, Any]:
         }
 
 # 创建基于ADK的网页内容提取Agent
+from google.adk.models.lite_llm import LiteLlm
+
 root_agent = Agent(
     name="web_content_extractor",
-    model="gemini-2.0-flash-exp",
+    model=LiteLlm(model="openai/deepseek-chat"),
     description="智能网页信息整理系统，支持多种输入格式的URL提取和网页内容抓取",
     instruction="""你是一个专业的网页信息整理助手，可以帮助用户从各种输入中提取和整理网页内容。
 
